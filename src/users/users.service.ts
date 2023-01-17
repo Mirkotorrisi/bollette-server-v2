@@ -31,10 +31,6 @@ export class UsersService {
     return this.usersRepository.findOneBy([{ email }, { username }]);
   }
 
-  findAll(): Promise<User[]> {
-    return this.usersRepository.find();
-  }
-
   async getAccountSum(userId: string): Promise<number> {
     this.logger.log('Get account sum');
     const user = await this.usersRepository.findOneBy({ id: +userId });

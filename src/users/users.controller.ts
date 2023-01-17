@@ -2,8 +2,8 @@ import {
   Body,
   Controller,
   Get,
-  Param,
   Post,
+  Request,
   Response,
   UseInterceptors,
 } from '@nestjs/common';
@@ -14,8 +14,10 @@ import { Response as Res } from 'express';
 import { LoginDto } from './dto/LogIn.dto';
 import { AuthInterceptor } from '../interceptors/auth.interceptor';
 import { LogoutDto } from './dto/Logout.dto';
+import { ApiHeader, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 @Controller('users')
+@ApiTags('USERS')
 export class UsersController {
   constructor(
     private authService: AuthService,
@@ -23,6 +25,9 @@ export class UsersController {
   ) {}
 
   @Post('/register')
+  @ApiOperation({
+    summary: 'Register user, needs email, username and password',
+  })
   async createUser(@Body() createUserDto: CreateUserDto, @Response() res: Res) {
     const { user, token } = await this.authService.register(createUserDto);
     return res
@@ -34,6 +39,10 @@ export class UsersController {
   }
 
   @Post('/login')
+  @ApiOperation({
+    summary:
+      'Login user throught email/username and password and stores token on redis',
+  })
   async loginUser(@Body() loginDto: LoginDto, @Response() res: Res) {
     const { user, token } = await this.authService.login(loginDto);
     return res
@@ -45,24 +54,34 @@ export class UsersController {
   }
 
   @Post('/logout')
+  @ApiOperation({
+    summary: 'Log out user',
+  })
   async logoutUser(@Body() logoutDto: LogoutDto) {
     return await this.authService.logout(logoutDto);
   }
 
   @UseInterceptors(AuthInterceptor)
-  @Get('/account_sum/:userId')
-  async getAccountSum(@Param('userId') userId: string) {
-    return await this.usersService.getAccountSum(userId);
+  @Get('/account_sum')
+  @ApiHeader({
+    name: 'x-auth-token',
+  })
+  @ApiOperation({
+    summary: 'Needs auth, returns user balance',
+  })
+  async getAccountSum(@Request() req: any) {
+    return await this.usersService.getAccountSum(req.user?.id);
   }
 
   @UseInterceptors(AuthInterceptor)
-  @Get('/tickets/:userId')
-  async getUserTickets(@Param('userId') userId: string) {
-    return await this.usersService.getUserTickets(userId);
-  }
-
-  @Get()
-  getAll() {
-    return this.usersService.findAll();
+  @Get('/tickets')
+  @ApiHeader({
+    name: 'x-auth-token',
+  })
+  @ApiOperation({
+    summary: 'Needs auth, returns user tickets',
+  })
+  async getUserTickets(@Request() req: any) {
+    return await this.usersService.getUserTickets(req.user?.id);
   }
 }

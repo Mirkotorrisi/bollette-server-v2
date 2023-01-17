@@ -24,7 +24,7 @@ export class UpdateBetsService {
     private ticketRepository: Repository<Ticket>,
     private userService: UsersService,
   ) {}
-  @Cron(CronExpression.EVERY_MINUTE)
+  @Cron(CronExpression.EVERY_10_MINUTES)
   async fetchResultsAndUpdateBets() {
     this.logger.debug('Calling external api to fetch matches results');
     const matchesResults = await firstValueFrom(
