@@ -1,5 +1,7 @@
 # bollette-server
 
+### [SWAGGER](https://bollette-server-v2.mirkotorrisi1.repl.co/documentation)
+
 Express server for my betting web app
 
 Bollette Calcio is a web app which allows to place fake bets on the most popular soccer/football championships.
