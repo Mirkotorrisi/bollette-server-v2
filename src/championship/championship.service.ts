@@ -21,9 +21,12 @@ export class ChampionshipService {
 
   async getMatches(sport: string, markets: string) {
     this.logger.log('Get Matches');
-    const cached = await this.redis.get('bet_list_temp');
+    const cached = await this.redis.get(sport + markets);
 
-    if (cached) return JSON.parse(cached);
+    if (cached) {
+      this.redis.set('bet_list_eternal', cached);
+      return JSON.parse(cached);
+    }
 
     const res = await firstValueFrom(
       this.httpService
@@ -64,8 +67,8 @@ export class ChampionshipService {
         };
       },
     );
-    this.redis.set('bet_list_temp', JSON.stringify(availableBetList), {
-      EX: 6000000000,
+    this.redis.set(sport + markets, JSON.stringify(availableBetList), {
+      EX: 60000,
     });
     this.redis.set('bet_list_eternal', JSON.stringify(availableBetList));
     return availableBetList;
