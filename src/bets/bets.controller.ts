@@ -52,7 +52,7 @@ export class BetsController {
     return this.betsService.submitCheckout(
       submitCheckoutDto,
       ticket_id,
-      req.user.id,
+      req.user?.id,
     );
   }
 }

@@ -1,6 +1,5 @@
-import { ResultType } from './../types';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsIn, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsNotEmpty } from 'class-validator';
 
 export class RemoveBetDto {
   @IsNotEmpty()

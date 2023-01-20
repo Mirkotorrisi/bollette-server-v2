@@ -56,9 +56,7 @@ export class AuthService {
       email: usernameOrEmail,
       username: usernameOrEmail,
     });
-    if (!user)
-      throw new BadRequestException('Invalid email/username or password');
-    const validatePass = await bcrypt.compare(password, user.password);
+    const validatePass = await bcrypt.compare(password, user?.password);
     if (validatePass) {
       const { password, ...userToSend } = user;
       const token = this.generateAuthToken(userToSend);
@@ -68,6 +66,7 @@ export class AuthService {
         token,
       };
     }
+    throw new BadRequestException('Invalid email/username or password');
   }
 
   async logout({ id }: LogoutDto) {
