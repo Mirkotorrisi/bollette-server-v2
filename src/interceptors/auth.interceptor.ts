@@ -19,7 +19,6 @@ export class AuthInterceptor implements NestInterceptor {
   ): Promise<any> {
     const req = context.switchToHttp().getRequest();
     const token = req.headers['x-auth-token'];
-    console.log(token);
     if (!token) throw new UnauthorizedException('Auth token is missing');
     try {
       const verified = jwt.verify(token, process.env.JWT_KEY);
