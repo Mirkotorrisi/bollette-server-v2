@@ -14,7 +14,7 @@ export class ChampionshipDto {
 }
 
 export class MktDto {
-  @IsIn(Object.keys(mkts))
+  @IsIn(mkts)
   @ApiProperty({
     description: 'Markets parameter',
     example: 'h2h',
