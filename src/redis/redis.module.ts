@@ -34,7 +34,8 @@ const retry_strategy = function (options) {
           socket: {
             connectTimeout: 60000,
           },
-          //@ts-ignore
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
           retry_strategy,
         });
 

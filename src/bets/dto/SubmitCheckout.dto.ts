@@ -25,17 +25,19 @@ export class SubmitCheckoutDto {
   })
   betImport: number;
 
-  @IsArray()
+  @IsNotEmpty()
   @ValidateNested({ each: true })
   @Type(() => BetDto)
   @IsArray()
   matches: BetDto[];
 
   @IsArray()
+  @IsNotEmpty()
   @Length(1)
   championships: string[];
 
   @IsArray()
+  @IsNotEmpty()
   @Length(1)
   markets: string[];
 }
