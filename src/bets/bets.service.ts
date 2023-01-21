@@ -16,7 +16,7 @@ import { UsersService } from 'src/users/users.service';
 import { Repository } from 'typeorm';
 import { PlaceBetDto } from './dto/PlaceBet.dto';
 import { RemoveBetDto } from './dto/RemoveBet.dto';
-import { SubmitCheckoutDto } from './dto/SubmitCheckout.dto';
+import { BetDto, SubmitCheckoutDto } from './dto/SubmitCheckout.dto';
 import { TicketMatch } from './types';
 
 @Injectable()
@@ -31,9 +31,9 @@ export class BetsService {
     @Inject('REDIS') private redis: RedisClientType,
   ) {}
 
-  getMultiplier = (ticket: TicketMatch[]) => {
+  getMultiplier = (ticket: BetDto[]) => {
     let res = 1;
-    ticket.map((item: TicketMatch) => {
+    ticket.map((item: BetDto) => {
       res *= item.odd;
     });
     return res;
@@ -105,14 +105,11 @@ export class BetsService {
   }
 
   async submitCheckout(
-    { betImport }: SubmitCheckoutDto,
+    { betImport, matches, championships, markets }: SubmitCheckoutDto,
     ticket_id: string,
     userId: string,
   ) {
-    const ticket = await this.redis.get(`ticket${ticket_id}`);
-    if (!ticket)
-      throw new NotFoundException('No ticket found with the provided id');
-    const multiplier = this.getMultiplier(JSON.parse(ticket));
+    const multiplier = this.getMultiplier(matches);
     const maxWin = (multiplier * betImport).toFixed(2);
     const account_sum = await this.userService.decrementUserBalance(
       userId,
@@ -123,8 +120,8 @@ export class BetsService {
       `INSERT into bolletta (ticket_id, import, max_win, user_id) VALUES ('${ticket_id}', '${betImport}', '${maxWin}','${userId}');`,
     );
 
-    const valuesToInsert = JSON.parse(ticket).map(
-      ({ teams, odd, result, start, matchId }: TicketMatch) => [
+    const valuesToInsert = matches.map(
+      ({ teams, odd, result, start, matchId }: BetDto) => [
         teams[0],
         teams[1],
         result,

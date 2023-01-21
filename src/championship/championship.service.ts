@@ -46,7 +46,7 @@ export class ChampionshipService {
     );
 
     const availableBetList = res.data.map(
-      ({ home_team, away_team, bookmakers, commence_time }) => {
+      ({ home_team, away_team, bookmakers, commence_time, id, sport_key }) => {
         const home = bookmakers[0]?.markets[0]?.outcomes[0]?.price;
         const away = bookmakers[0]?.markets[0]?.outcomes[1]?.price;
         const draw = bookmakers[0]?.markets[0]?.outcomes[2]?.price;
@@ -54,6 +54,8 @@ export class ChampionshipService {
           away_team,
         )}${commence_time?.split('T')?.[0]}`;
         return {
+          id,
+          sport_key,
           matchId,
           teams: [home_team, away_team],
           start: commence_time,
