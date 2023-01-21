@@ -19,24 +19,7 @@ import { ApiHeader, ApiOperation, ApiTags } from '@nestjs/swagger';
 export class BetsController {
   constructor(private betsService: BetsService) {}
 
-  @Post()
-  @ApiOperation({
-    summary:
-      'Place a bet, no need for auth. If not ticket id is provided, a new one will be created',
-  })
-  placeBet(@Body() placeBetDto: PlaceBetDto) {
-    return this.betsService.placeBet(placeBetDto);
-  }
-
-  @Delete()
-  @ApiOperation({
-    summary: 'Remove a bet from the ticket, need a ticket id',
-  })
-  removeBet(@Body() removeBetDto: RemoveBetDto) {
-    return this.betsService.removeBet(removeBetDto);
-  }
-
-  @Post('checkout/:ticket_id')
+  @Post('checkout')
   @ApiHeader({
     name: 'x-auth-token',
   })
@@ -45,14 +28,9 @@ export class BetsController {
   })
   @UseInterceptors(AuthInterceptor)
   submitCheckout(
-    @Param('ticket_id') ticket_id: string,
     @Body() submitCheckoutDto: SubmitCheckoutDto,
     @Request() req: any,
   ) {
-    return this.betsService.submitCheckout(
-      submitCheckoutDto,
-      ticket_id,
-      req.user?.id,
-    );
+    return this.betsService.submitCheckout(submitCheckoutDto, req.user?.id);
   }
 }

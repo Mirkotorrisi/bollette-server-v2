@@ -106,7 +106,6 @@ export class BetsService {
 
   async submitCheckout(
     { betImport, matches, championships, markets }: SubmitCheckoutDto,
-    ticket_id: string,
     userId: string,
   ) {
     const multiplier = this.getMultiplier(matches);
@@ -115,7 +114,7 @@ export class BetsService {
       userId,
       betImport,
     );
-
+    const ticket_id = Number(new Date().getTime().toString().substring(8));
     await this.ticketRepository.query(
       `INSERT into bolletta (ticket_id, import, max_win, user_id) VALUES ('${ticket_id}', '${betImport}', '${maxWin}','${userId}');`,
     );

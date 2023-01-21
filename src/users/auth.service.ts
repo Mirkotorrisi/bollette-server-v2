@@ -25,7 +25,7 @@ export class AuthService {
     jwt.sign({ id, username, email, account_sum }, process.env.JWT_KEY);
 
   async register({ email, username, password }: CreateUserDto) {
-    this.logger.log('Register user', new Date());
+    this.logger.log('Register user');
     const user = await this.usersService.findOne({ email, username });
     if (user)
       throw new BadRequestException(
@@ -51,12 +51,16 @@ export class AuthService {
   }
 
   async login({ usernameOrEmail, password }: LoginDto) {
-    this.logger.log('Login user ', new Date());
+    this.logger.log('Login user ');
     const user = await this.usersService.findOne({
       email: usernameOrEmail,
       username: usernameOrEmail,
     });
-    const validatePass = await bcrypt.compare(password, user?.password);
+    console.log(
+      '🚀 ~ file: auth.service.ts:59 ~ AuthService ~ login ~ user',
+      user,
+    );
+    const validatePass = await bcrypt.compare(password, user?.password ?? '');
     if (validatePass) {
       const { password, ...userToSend } = user;
       const token = this.generateAuthToken(userToSend);

@@ -2,13 +2,11 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsArray,
-  IsBoolean,
   IsIn,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
-  Length,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -32,13 +30,9 @@ export class SubmitCheckoutDto {
   matches: BetDto[];
 
   @IsArray()
-  @IsNotEmpty()
-  @Length(1)
   championships: string[];
 
   @IsArray()
-  @IsNotEmpty()
-  @Length(1)
   markets: string[];
 }
 
@@ -72,7 +66,6 @@ export class BetDto {
   ticket_id: number;
 
   @IsArray()
-  @Length(2)
   teams: string[];
 
   @IsString()
