@@ -1,8 +1,7 @@
-import { ChampionshipDto, MktDto } from './dto/GetMatches.dto';
 import {
+  BadRequestException,
   Inject,
   Injectable,
-  InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
 import { RedisClientType } from '@redis/client';
@@ -19,9 +18,9 @@ export class ChampionshipService {
     @Inject('REDIS') private redis: RedisClientType,
   ) {}
 
-  async getMatches(sport: string, markets: string) {
+  async getMatches(sport: string) {
     this.logger.log('Get Matches');
-    const cached = await this.redis.get(sport + markets);
+    const cached = await this.redis.get(sport);
 
     if (cached) {
       this.redis.set('bet_list_eternal', cached);
@@ -34,22 +33,28 @@ export class ChampionshipService {
           params: {
             apiKey: process.env.THE_ODDS_API_KEY,
             regions: 'eu',
-            markets,
+            markets: 'h2h,totals',
           },
         })
         .pipe(
           catchError((err) => {
             this.logger.error('Something went wrong while fetching odds');
-            throw new InternalServerErrorException(err.response.data);
+            throw new BadRequestException(err.response.data);
           }),
         ),
     );
 
     const availableBetList = res.data.map(
       ({ home_team, away_team, bookmakers, commence_time, id, sport_key }) => {
-        const home = bookmakers[0]?.markets[0]?.outcomes[0]?.price;
-        const away = bookmakers[0]?.markets[0]?.outcomes[1]?.price;
-        const draw = bookmakers[0]?.markets[0]?.outcomes[2]?.price;
+        const bookmaker = bookmakers?.find((b) => b.markets.length > 1);
+        const h2h = bookmaker?.markets?.find((mkt) => mkt.key === 'h2h');
+        const totals = bookmaker?.markets?.find((mkt) => mkt.key === 'totals');
+
+        const home = h2h?.outcomes[0]?.price;
+        const away = h2h?.outcomes[1]?.price;
+        const draw = h2h?.outcomes[2]?.price;
+        const over = totals?.outcomes[0]?.price;
+        const under = totals?.outcomes[1]?.price;
         const matchId = `${getTeamPrefix(home_team)}-${getTeamPrefix(
           away_team,
         )}${commence_time?.split('T')?.[0]}`;
@@ -63,14 +68,14 @@ export class ChampionshipService {
             home,
             draw,
             away,
-            over: home,
-            under: away,
+            over,
+            under,
           },
         };
       },
     );
-    this.redis.set(sport + markets, JSON.stringify(availableBetList), {
-      EX: 60000,
+    this.redis.set(sport, JSON.stringify(availableBetList), {
+      EX: 60,
     });
     this.redis.set('bet_list_eternal', JSON.stringify(availableBetList));
     return availableBetList;

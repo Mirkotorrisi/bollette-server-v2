@@ -1,24 +1,13 @@
-import { mkts } from '../utils';
-import { ApiProperty } from '@nestjs/swagger';
-import { IsIn, IsNotEmpty, IsOptional } from 'class-validator';
-import { sport_keys } from '../utils';
-
-export class ChampionshipDto {
-  @IsIn(Object.keys(sport_keys))
-  @ApiProperty({
-    description: 'Championship parameter',
-    example: 'serie_a',
-    required: true,
-  })
-  championship: string;
-}
-
-export class MktDto {
-  @IsIn(mkts)
-  @ApiProperty({
-    description: 'Markets parameter',
-    example: 'h2h',
-    required: true,
-  })
-  mkt: string;
+export enum ChampionshipEnum {
+  premier_league = 'premier_league',
+  serie_a = 'serie_a',
+  serie_b = 'serie_b',
+  ligamax = 'ligamax',
+  bundesliga = 'bundesliga',
+  eredivisie = 'eredivisie',
+  primeira_liga = 'primeira_liga',
+  la_liga = 'la_liga',
+  ligue_one = 'ligue_one',
+  champions_league = 'champions_league',
+  europa_league = 'europa_league',
 }

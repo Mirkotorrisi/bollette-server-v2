@@ -1,25 +1,19 @@
 import { Controller, Get, Param } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { ChampionshipService } from './championship.service';
-import { ChampionshipDto, MktDto } from './dto/GetMatches.dto';
+import { ChampionshipEnum } from './dto/GetMatches.dto';
 
 @Controller('championships')
 @ApiTags('CHAMPIONSHIPS')
 export class ChampionshipController {
   constructor(private championshipService: ChampionshipService) {}
 
-  @Get('/:championship/:mkt')
+  @Get('/:championship')
   @ApiOperation({
-    summary:
-      'Returns match list, given a championship and a market (head to head or totals)',
+    summary: 'Returns match list, given a championship',
   })
-  async getMatches(
-    @Param('championship') championship: ChampionshipDto,
-    @Param('mkt') mkt: MktDto,
-  ) {
-    return await this.championshipService.getMatches(
-      String(championship),
-      String(mkt),
-    );
+  @ApiParam({ name: 'championship', enum: ChampionshipEnum })
+  async getMatches(@Param('championship') championship: ChampionshipEnum) {
+    return await this.championshipService.getMatches(championship);
   }
 }
