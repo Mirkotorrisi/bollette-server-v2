@@ -19,10 +19,6 @@ export class ChampionshipService {
   ) {}
 
   async getMatches(sport: string, avoidCache?: boolean) {
-    console.log(
-      '🚀 ~ file: championship.service.ts:22 ~ ChampionshipService ~ getMatches ~ sport',
-      sport,
-    );
     this.logger.log('Get Matches');
     const cached = await this.redis.get(sport);
 
@@ -49,7 +45,7 @@ export class ChampionshipService {
     );
 
     const availableBetList = res.data.map(
-      ({ home_team, away_team, bookmakers, commence_time, id, sport_key }) => {
+      ({ home_team, away_team, bookmakers, commence_time, id }) => {
         const bookmaker = bookmakers?.find((b) => b.markets.length > 1);
         const h2h = bookmaker?.markets?.find((mkt) => mkt.key === 'h2h');
         const totals = bookmaker?.markets?.find((mkt) => mkt.key === 'totals');
@@ -64,7 +60,7 @@ export class ChampionshipService {
         )}${commence_time?.split('T')?.[0]}`;
         return {
           id,
-          sport_key,
+          sport_key: sport,
           matchId,
           teams: [home_team, away_team],
           start: commence_time,
