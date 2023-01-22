@@ -18,11 +18,11 @@ export class ChampionshipService {
     @Inject('REDIS') private redis: RedisClientType,
   ) {}
 
-  async getMatches(sport: string) {
+  async getMatches(sport: string, avoidCache?: boolean) {
     this.logger.log('Get Matches');
     const cached = await this.redis.get(sport);
 
-    if (cached) {
+    if (cached && !avoidCache) {
       this.redis.set('bet_list_eternal', cached);
       return JSON.parse(cached);
     }

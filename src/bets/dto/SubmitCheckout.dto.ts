@@ -28,9 +28,6 @@ export class SubmitCheckoutDto {
   @Type(() => BetDto)
   @IsArray()
   ticket: BetDto[];
-
-  @IsNotEmpty()
-  multiplier: number;
 }
 
 export class BetDto {
@@ -71,4 +68,10 @@ export class BetDto {
   @IsNumber()
   @Min(1)
   odd: number;
+
+  @IsString()
+  @IsNotEmpty()
+  sport_key: string;
+
+  prevOdd?: number;
 }

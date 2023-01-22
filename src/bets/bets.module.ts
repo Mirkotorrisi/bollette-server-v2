@@ -11,6 +11,7 @@ import { UsersService } from 'src/users/users.service';
 import { Bet } from 'src/entities/bet.entity';
 import { UpdateBetsService } from './update-bets.service';
 import { HttpModule } from '@nestjs/axios';
+import { ChampionshipService } from 'src/championship/championship.service';
 
 @Module({
   imports: [
@@ -22,6 +23,12 @@ import { HttpModule } from '@nestjs/axios';
     UsersModule,
   ],
   controllers: [BetsController],
-  providers: [BetsService, AuthInterceptor, UsersService, UpdateBetsService],
+  providers: [
+    BetsService,
+    AuthInterceptor,
+    UsersService,
+    UpdateBetsService,
+    ChampionshipService,
+  ],
 })
 export class BetsModule {}

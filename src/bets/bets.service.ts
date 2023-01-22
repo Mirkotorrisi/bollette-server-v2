@@ -1,23 +1,17 @@
 import {
   BadRequestException,
-  HttpException,
   Inject,
   Injectable,
-  InternalServerErrorException,
   Logger,
-  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { RedisClientType } from '@redis/client';
+import { ChampionshipService } from 'src/championship/championship.service';
 import { Bet } from 'src/entities/bet.entity';
 import { Ticket } from 'src/entities/ticket.entity';
-import { User } from 'src/entities/user.entity';
 import { UsersService } from 'src/users/users.service';
 import { Repository } from 'typeorm';
-import { PlaceBetDto } from './dto/PlaceBet.dto';
-import { RemoveBetDto } from './dto/RemoveBet.dto';
 import { BetDto, SubmitCheckoutDto } from './dto/SubmitCheckout.dto';
-import { TicketMatch } from './types';
 
 @Injectable()
 export class BetsService {
@@ -28,6 +22,7 @@ export class BetsService {
     @InjectRepository(Ticket)
     private ticketRepository: Repository<Ticket>,
     private userService: UsersService,
+    private championshipService: ChampionshipService,
     @Inject('REDIS') private redis: RedisClientType,
   ) {}
 
@@ -40,21 +35,61 @@ export class BetsService {
   };
 
   async submitCheckout(
-    { betImport, ticket, multiplier }: SubmitCheckoutDto,
+    { betImport, ticket }: SubmitCheckoutDto,
     userId: string,
   ) {
-    const newMultiplier = this.getMultiplier(ticket);
-    const maxWin = (multiplier * betImport).toFixed(2);
+    const ticket_id = Number(new Date().getTime().toString().substring(8));
+    // CHECK IF ODDS ARE CHANGED
+    const championships = Array.from(
+      new Set(ticket.map((bet) => bet.sport_key)),
+    );
+    const flatList = await Promise.all(
+      championships.flatMap(
+        async (sport_key) =>
+          await this.championshipService.getMatches(sport_key),
+      ),
+    );
+    const updatedTicket = ticket.map((bet: BetDto) => {
+      const matchOnList = flatList.find((m) => m.id === bet.id);
+      if (!matchOnList)
+        throw new BadRequestException(
+          'Some bets are expired, create another ticket',
+        );
+      if (matchOnList.odds[bet.result] !== bet.odd) {
+        return {
+          ...bet,
+          odd: matchOnList.odds[bet.result],
+          prevOdd: bet.odd,
+        };
+      }
+      return bet;
+    });
+
+    const multiplier = updatedTicket.reduce((acc, bet) => (acc *= bet.odd), 1);
+    const hasSomeChanges = updatedTicket.some(
+      (b) => !!b.prevOdd && b.prevOdd !== b.odd,
+    );
+
+    if (hasSomeChanges) {
+      return {
+        import: betImport,
+        multiplier,
+        updatedTicket,
+        ticket_id,
+      };
+    }
+    // STORE BOLLETTA ON DB AND UPDATE USER BALANCE
     const account_sum = await this.userService.decrementUserBalance(
       userId,
       betImport,
     );
-    const ticket_id = Number(new Date().getTime().toString().substring(8));
+    const maxWin = (multiplier * betImport).toFixed(2);
+
     await this.ticketRepository.query(
       `INSERT into bolletta (ticket_id, import, max_win, user_id) VALUES ('${ticket_id}', '${betImport}', '${maxWin}','${userId}');`,
     );
 
-    const valuesToInsert = ticket.map(
+    const valuesToInsert = updatedTicket.map(
       ({ teams, odd, result, start, matchId }: BetDto) => [
         teams[0],
         teams[1],
