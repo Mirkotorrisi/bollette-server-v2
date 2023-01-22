@@ -27,13 +27,10 @@ export class SubmitCheckoutDto {
   @ValidateNested({ each: true })
   @Type(() => BetDto)
   @IsArray()
-  matches: BetDto[];
+  ticket: BetDto[];
 
-  @IsArray()
-  championships: string[];
-
-  @IsArray()
-  markets: string[];
+  @IsNotEmpty()
+  multiplier: number;
 }
 
 export class BetDto {
