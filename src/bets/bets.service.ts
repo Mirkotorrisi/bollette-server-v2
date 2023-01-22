@@ -43,12 +43,13 @@ export class BetsService {
     const championships = Array.from(
       new Set(ticket.map((bet) => bet.sport_key)),
     );
-    const flatList = await Promise.all(
-      championships.flatMap(
+    const list = await Promise.all(
+      championships.map(
         async (sport_key) =>
           await this.championshipService.getMatches(sport_key, true),
       ),
     );
+    const flatList = list.flatMap((l) => l);
     const updatedTicket = ticket.map((bet: BetDto) => {
       const matchOnList = flatList.find((m) => m.id === bet.id);
       if (!matchOnList)
