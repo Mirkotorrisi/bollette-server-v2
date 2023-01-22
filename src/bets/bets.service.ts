@@ -46,7 +46,7 @@ export class BetsService {
     const flatList = await Promise.all(
       championships.flatMap(
         async (sport_key) =>
-          await this.championshipService.getMatches(sport_key),
+          await this.championshipService.getMatches(sport_key, true),
       ),
     );
     const updatedTicket = ticket.map((bet: BetDto) => {

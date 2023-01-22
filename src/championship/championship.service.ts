@@ -19,6 +19,10 @@ export class ChampionshipService {
   ) {}
 
   async getMatches(sport: string, avoidCache?: boolean) {
+    console.log(
+      '🚀 ~ file: championship.service.ts:22 ~ ChampionshipService ~ getMatches ~ sport',
+      sport,
+    );
     this.logger.log('Get Matches');
     const cached = await this.redis.get(sport);
 
