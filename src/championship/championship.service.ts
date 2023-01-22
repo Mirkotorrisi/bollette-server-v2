@@ -50,8 +50,8 @@ export class ChampionshipService {
         const h2h = bookmaker?.markets?.find((mkt) => mkt.key === 'h2h');
         const totals = bookmaker?.markets?.find((mkt) => mkt.key === 'totals');
 
-        const home = h2h?.outcomes[0]?.price;
-        const away = h2h?.outcomes[1]?.price;
+        const home = h2h?.outcomes[1]?.price;
+        const away = h2h?.outcomes[0]?.price;
         const draw = h2h?.outcomes[2]?.price;
         const over = totals?.outcomes[0]?.price;
         const under = totals?.outcomes[1]?.price;
