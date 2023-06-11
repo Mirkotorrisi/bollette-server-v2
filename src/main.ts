@@ -31,5 +31,6 @@ async function bootstrap() {
   SwaggerModule.setup('documentation', app, document, customOptions);
 
   await app.listen(3001);
+  console.log('Nest is running on port 3001');
 }
 bootstrap();

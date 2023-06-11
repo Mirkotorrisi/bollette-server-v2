@@ -1,7 +1,6 @@
 import { Bet } from 'src/entities/bet.entity';
 import { Ticket } from './entities/ticket.entity';
 import { Module } from '@nestjs/common';
-import { UsersController } from './users/users.controller';
 import { UsersModule } from './users/users.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
@@ -12,6 +11,7 @@ import { ChampionshipModule } from './championship/championship.module';
 import { RankingModule } from './ranking/ranking.module';
 import { SlotModule } from './slot/slot.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { PokerModule } from './poker/poker.module';
 
 @Module({
   imports: [
@@ -32,6 +32,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     ChampionshipModule,
     RankingModule,
     SlotModule,
+    PokerModule,
   ],
 })
 export class AppModule {}
