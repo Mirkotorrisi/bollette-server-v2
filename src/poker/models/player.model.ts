@@ -22,12 +22,16 @@ export class Player {
     this.hand = [];
     this.bet = 0;
     this.state = 'IDLE';
+    this.availableChoices = [];
+    this.isCurrentPlayer = false;
+    this.isDealer = false;
   }
 
   get isFolded() {
     return this.state === 'FOLD';
   }
   get isAllIn() {
+    console.log('CHECKING IS ALL IN??', this.state === 'ALL_IN');
     return this.state === 'ALL_IN';
   }
   get isSitOut() {
@@ -37,36 +41,31 @@ export class Player {
     return this.state === 'TO_PLAY';
   }
 
-  public doBet(amount: number) {
-    console.log(this, 'bet');
-    this.chips -= amount;
-    this.bet = amount;
-    this.state = 'IDLE';
+  public payChips(amount: number) {
+    if (this.chips >= amount) {
+      this.chips -= amount;
+      this.bet += amount;
+      this.state = 'IDLE';
+      console.log(this.name, 'pays Chips');
+    }
+    if (this.chips === 0) {
+      this.state = 'ALL_IN';
+      console.log(this.name, 'is All in');
+    }
   }
 
-  public doCall(amount: number) {
-    this.chips -= amount;
-    this.bet += amount;
-    this.state = 'IDLE';
-
-    console.log(this.name, ' does a call');
-  }
-
-  public doRaise(amount: number) {
-    console.log(this, 'raise');
-    this.chips -= amount;
-    this.bet += amount;
-    this.state = 'IDLE';
-    console.log(this.name, 'does a raise');
+  public canPay(amount: number) {
+    return this.chips >= amount;
   }
 
   public doFold() {
     this.state = 'FOLD';
+    this.bet = 0;
     console.log(this.name, 'does a fold');
   }
 
   public doCheck() {
-    console.log(this.name, ' checks');
     this.state = 'IDLE';
+    console.log(this.name, ' checks');
   }
 }

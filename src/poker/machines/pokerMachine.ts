@@ -10,25 +10,32 @@ const playerAction = {
   on: {
     RAISE: {
       cond: 'isBetActive',
-      actions: ['raise', 'setLastPlayerToTalk'],
-      target: 'endTurn',
+      actions: ['setLastPlayerToTalk', 'raise'],
+      target: 'nextPlayer',
     },
     CALL: {
       cond: 'isBetActive',
       actions: 'call',
       target: 'endTurn',
     },
-    FOLD: {
-      actions: 'fold',
-      target: 'endTurn',
-    },
+    FOLD: [
+      {
+        target: '#pokerGame.idle',
+        cond: 'isTwoPlayerLeft',
+        actions: ['fold', 'handleWinWithouShowDown', 'handleNextDealer'],
+      },
+      {
+        target: 'endTurn',
+        actions: ['fold'],
+      },
+    ],
     CHECK: {
       actions: 'check',
       target: 'endTurn',
     },
     BET: {
-      actions: ['bet', 'setLastPlayerToTalk'],
-      target: 'endTurn',
+      actions: ['setLastPlayerToTalk', 'bet'],
+      target: 'nextPlayer',
     },
   },
 };
@@ -40,17 +47,25 @@ const nextPlayer = {
   },
 };
 
-const onePlayerNextRoundState = {
-  target: '#pokerGame.idle',
-  cond: 'isOnePlayerLeft',
-  actions: ['handleWinWithouShowDown', 'handleNextDealer'],
+const checkAllIn = {
+  on: {
+    '': [
+      {
+        target: 'playerTurn.endTurn',
+        cond: 'isCurrentPlayerAllIn',
+      },
+      {
+        target: 'playerTurn.playerAction',
+      },
+    ],
+  },
 };
 
 export const getPokerMachine: any = (table: Table) =>
   interpret(
     createMachine<Ctx>(
       {
-        /** @xstate-layout N4IgpgJg5mDOIC5QAcD2BrMAnA4gQwFswA6ASwgBswBiAbQAYBdRFVWUgF1NQDsWQAHogCMATgAsADmL0ArADZ69UaNmz64+QBoQAT0QBmYQfHEATKMmTNogwYWSAvo51pMuQiWRYwAMQqoyMSwHHhYHABKqACuPBB0TPxo7Fy8-EIIZnayxKIA7AaSwvLyKkYGOvoIBsp5xEZmwuLCwvSSZvJmss6uGNj4RMTefgFByBR4utgAKtFYPEMTU1gAggDGqTzUESsAkgDKAKIMzEggyZzcfGcZZuIG8jLFxpIKJeIKlYbyH8SSlpYOsJJDUzD1zn0PINhv5AotJjM5gtxgjVhsrtQAMIrAAyOJOSTYlzSN0QdweT3kLzeP0+ekMeXk0jy4ksbTsILyeW6Lgh7gGXh8sLGS0R83hy3Wm2ovgA8jiACIEs4XTbpMn3R70Z6FGkfbT06qSH65YwWIGvMz0MG8tz9TxDIWjCVi5GitHSzEACUOmIA0srWCkrurMprKdSSrSDVUDKIqTJGVymZYSgZwXaoYKRnCUctZuK89gpRiAEKHaaBiHBkmgW7h7VU3VR-VfaqyLIyKTCByAjriDOQgWOnMi1EFhZgOIThKnIPE651wwtR7CRmqJTqWQ1GOGURyU2KUpx1ptHm9fkOmHOotYCfEKcQGe0YRz6sL0NmJPETqNVP3dQSjbAw8kkOpxCyWxNBZPIvzyQdL2hJ1c3de8eDAAQOAABXdWdCRrRdBDJb9fzEY0APoIDDQ5ehchKBQxFkHt7gQ+0kNHYh0MwqJYniKtVRDUkEA7NsimIVkWiUSjJDaIoB1tIcr2QoIuMiGI4joV98I-ISxCkGQFCUFQ1A0XcEHuY1iAKIxxC5egTE0Vis2IAAzZ0QjCNTeLwlUiTVISzEC8wrHkOxuRqWQVDbDppFs8RWUozpLCMeQnOHNyUPHJEXQ9DEdgOY5El8gjQwMIK7Faej7h7PJRLXGQqWtGpYIkew0odDKx3zbLbxLXgsVxfEivnfyl2qcqjES2RqtkWrDVsURTWBKQ8lsbVRGEdrBk6nL7169F+rlRV+L8wSxrKsx6kmqqjFmttWgpehwrsJ6UuBLaSB2289vdPqtm9X0A2G99RqI8bLoqqaZrmqoWjK8xCiKAptxqD4Ptcm9UJ636Dq2ctK2BgTazBi6rsq+RptumHEFKUxGg0MQyLjUL0a+rHxUfZ9CdO4mMlPS6JK5PJgSKCnZHup66ieoplGsBR1HTBTEM+zGso56ckU0t8icIjIKYMXIQOtWaiiaHs21UaRZFeY0LE0ForFZ1XuvFVScNRHyRrOsH9cNvJjdAlpmnFw01Eu4QzCsO4ujXM0nbhVSeI0k6St0roDdm63KIeFkRMNJouWIWarTja3-eteOVIwrzk604qdLGiPtyL7kZNC+Rc7Me6xAz9dWojmSWKVtiSA4bKPPCJO+O51PG9KOomVL1qClESP7vEDRxO1ezFH+aw5HRsfC3Zt1UT+7Y9iOFOG7Btd8isjpI+MDRYLUe7VEuyxuVX4oZJ7G0Lwj2IEfU+LtQHFlxgNPE19QZ81WnUWCnQiio1fiHKoVpuR-EKF0CmHwrBgUPtjNW4DcqHXlEqGeN84H30QU-FBXQ0FkjXJdJQv9tw-B+LYQhx9iE5XPgDf0MDvbUIQY-ZBL8GHRRisQYoW4wKBWtCybhJCfpn0gfjIRvMRDwIfkg5+tlJH5xBLRYwTIuRG39oUZRu1sqc01po3WGpC4hRUHpfIJgu6GkCsYGQGh1AgmmqoVKw9nIgJserJ89i65ey0ZkCOi07CBQ3tNL8whorKFMExLIwI1wtTuNY762U3a4QcZ+eJV0klyAgsLe6TJpByA7O0CCG8rTBMAaEop1cp6exBsI4ikdcjC2tC0Cw1o2jRVZDkTc8ZF6KPgiE4cYTE7qT4tE3psS85VHuBIGRlgQTlA3vkdGWBSAADdsDBFCJPFZPSdafnhpHY0YVtyUW1OIYCiUfzKGzqydxxhjlnIuYUnhkpIH5SvpQ2Bhh4aQxuj2JkwEqQ5EYiyB4HcFDcgBecrA4SSH8MGqUoSiSyZQ1ugi6iBR6maDwdSsCogsVApPnwyBR0KHax5o46oMLrq4LJZIYCII6bKAkF+D41oAF8iASc7FuLmWeh9IIyFfSuUQx5ZTeF-LqJrXqAUapxtZEMpxcCvF6iKyEvOty8m6qHDAVZBDMVq1I7xgkPM9pw5pWMt4XY+YtyOWhlaBHcSG0hYi1kWk6iYEciNFSaoNcTFNoLIdB6o1TLvVbBfOy2ePtQp+wDqbZo4bYzckeLBOQFg7CWFsoa2VxSPbmuzQbWw-suiBzNoW6F6hzChSkPce42omjVuWd5etfMOi9yzu3XOxQ2zNDsD+Locg5DNUCoOrpNyM3aShQgCOObM5txzh8adhoIIdj+BTBaQd6WJsGLAAAFqgAA7hAR96alWxOKJg5QkV9xrlsrBGdkkZD2FpIyNcFdwQ8FQBAOAhJlabuVQAWgjm2BDWopLofQxYJw16SDkCoPB99rxFq2WUEbDsJhQIzpaQjFkgV8hh0Vm6pSo4COcsaKyH8rxgR206NuD5yg-jRtCk0DouD0bXjhBPGuEBWOfitLRJkTF2gSF4xUaiLRFoF3NI63j4nlK4tkwFMQC8uPKc0OnYC5bxLPVPMUCwemOLGrld7O5AU7g5EU9xlTFnqLNFMIyEw+5I2hXPJK5yEmuqugfBreYhmxodGbsYfIVJWmUQKMBR1MguNPUaCl40DnhQ1uru7ZYcWwZ20WqvWyrxFDAnjLa1ofwQTGiS6wxjYXhwRc4mu3iZXbiNA86ZnjPmtlYfMC0qka4rCUUrn17490ZK5H2TYDuVJ4yV0uZ5Kec2EBgWivueoygfhZFsiYKkG3jU7esDOk0oVGQyTUN2o5OGMaZTAc54mrnG5lTbNbHIq9M5GFbqZC7qaYuES+2DbcxHprW0FUbQKFsc13GFrZDuT1ShXqY9tZ2UXa2lfrlukEjxIIpZXi80Qv32hdhSw8H97Q2kdY6s6IdcQdutE8bDGwW8siNjsPFV1TPBggPZ-G+oqgyoOHuGVMyxhii5FlnIJLq9BeZkWePK50nRedHF9uHB1hEmy4giTh4VpV7WmpYztXDowmXcJ8qnskVdeS6ZNLjotSlBF2O10ZKGCClMv2qDSHfNFB1FLi7g3Mv7qwWEH8DswIY-TfWy923YPImxft7Eq0TQ-ishkpNDsNSvHCpkcjEEzE7D+94fj7AO3smx+7e0bk28VCy+FnUfIHQlCBapIyaxrOZOZ85TVMPEv9du7Ml3nIZUDcYIkJReS2OSDJp25ofbq0ZFTcl3ntcVvFKDGTZt65vWh+hnyB8qw4l4rRw2tV0L1uD+ApTcQnbEhLM665IFFGa1LDVqc4HlzP1XSCCYCQoUwV5QoDaECGSA+F7Q-JzNNHbQJcSWHKwEwBHDLBMQoONXVMdP-JlGvLAK7TQBGeMCOcnCKUAxbYEaWaApoIoVdbiFZdnZDY9DoOodhDaZ+F5TFF7O9R9Z9B9CHIAxuFJZ3cfRJADIwP4f2eBeKI8HkZwIAA */
+        /** @xstate-layout N4IgpgJg5mDOIC5QAcD2BrMAnA4gQwFswBiAGQFEBBANXIH0AVSgIQoG0AGAXURVVgCWAFwGoAdrxAAPRAEYAnAHYArADoAzLPUAOWQBZFsgEzyO87QBoQATzkdFqxYu1HlHIxwBsuzzoC+flZomLiEJABSAPIAkgByjCzs3JJogiLikjIICrqqHLLK2nryykYGnp5WttlGAUEY2PhEqgIQADYknDxIIKnCohI9WQYOJfJGRurq5nrGilWIRp6KHKp66hOeJp7yngV1vQ2hzchYYABibajIqrBCeFhCAEqoAK5iEMRdKfz9GUOIbSeNQuXTFHZKZSKPQLBBLKZrZTqTx6dx6PTKLQHYKNMKqU4XK43ZBtPDWbAMV5YMT40nkrCUADG6TExCelGiAGVyN8en0WZlEJDVNoVNpdrIVHoTJYbIh1MVRuttF49Cr5MY9Nijk0wPizpdrrSyRSqTSSSaGcyBsQAMKUUikXl8NIDQUIYWiwoSqUy2EbWSyVSyYFTCreJGKdTakK6-WEo0W+mU6nG+lMlnEc6RUgAEWdh1d-1AwycqjGEymMzmsLKHDUyml+WmHG0Om0MdxJwNRLTptTSewGZt2bzbFk3Rdf0GJaFKhFYp9jb9coQmgKGlFkqMUaRU2UneOeoJhuJdP75vPVsztoAEuRbQBpAv8t0Aj3zr3iva+8z+-LyKonhmBwar5NCraHnGJ69oOWAppelrDuIxDMOQDAvr8Arvp6i4-suf6rsiHh5BiFSlJGii1IEhyxniMGJleCGqGAHwIV8yR8lhb6ztkTblqiuzAnoKLaMo-r6J4jgcNMGoYvI6KyFB9E9oxlrMaxEDseOk6FtO7pQrWsigaoyjeFWuiBko0Y0TiR7xqefbwWaqhiGAUhCAACleHG6a+xbSHIBirFCHhRqKHgav66hmXkpRlHs8jqE4krKc0ABmvZ3A8zxvB8vk-EWM6BXCO6qEsOzSuoXjzERarlvorY6FGCqyEUaV6planJi5cHIay7JcjynFTthvFTA4mgieq0yaBUMKrsYWhrKBMn1qBbUTB1qhdWe6m9Ve-V2g6TojXpY0lRNGiSTNSUhiisLjFJWyFAomJLOi1H1HRGWwUxB1IdaKGjvmZ3+cVWSBvOphvRisnGeJq7rEG3iuMohQbEUYkHrZOp4rtTnMX1QOsiDOmFfp75XVN3hmLN90LdUbarEUijAujigKaiX20V2nV-ftA6HSTdr3k+mFFe61M3XTd3zbCu55JV6KFJz7hKbjP3891F5OUdaEYWD3EBVk0vTbLc0PYt+6mV4+TlMoSU2d9fM7QLPWppp2lG5L75Q2oMMlHD8gavWCvrEBTjOMZ6LVRU20E3BGlsWaXwThTF1ZM4RgaJz2eo47GKwkCOchhie6ijsSwJ+7utuR53mWgVXG+7x2e50oLgFwpiPVMZhimcYAY5OYUzbUILnZY8LzvJ8EuU7xBSlOV+hJaBn1Y7Cyws5ZSxJVV4rjwDHuIemIuDdy8+Z3IFQ50sFWmGzMOM3ISJqMlZgRXJyxH0Lgun0OEW9pHRXx4iVe6d8tgVEfjse2sJNTaFMuMEuUIYqzC1JrV2E8-4nz1iLMmPsF4lVFLWNwOcgTAQ5tnZwihf4AOcjgwBmYybpxbkQyGt9ypQNgU-OBi0CjkMkuYFEMlkqeDoYTY+TCbR3gfM+Qh19sicPvtA+wsD9DwPrA4GSok2Zqk5klCRScpHXhtAbUBJsb5bC4Q-NRz94HAgcAYaqbU9hL1Spg+y2D6HJy0qnCxENFhuBZsUXQhhtBAnXpo4EQF0RiSMECaqKgjH-U9inakac-LG0CXCfuGgdyhklOsdE8C2p6GDHNHROgtHiM8XGbxkjUz1y8j5AJ7ojB5I2GzJERSFQv2yLNNYnMTAqCSo-Hmdk4xYAEAAN2wLce4088pzwUWArICSywhh3CJGSIki6rhDuQtUWh8gqPMNtaZcysCNPoUdC+w0smtxKjKBwHTQJFAqFRPY-S2pQg0MlEoxhUYKAubM+ZxjGGmJQsA06jz2GLHMK8mOHzlhLA0YtKEIVHZd3Ru4JKtSXb2UueC1Jtz8E5lBnCxRThazAiDCYTagYkQylBVcm5eDmEUvJmwxRLyV7vJEqi758CDDlOjrfH8rYSispJf-DlMixbyKpWshFop+VqkFV89FfcAV5BkpGcUGoUQyuuRCslmZzGrMsXCRF6qUVap+UoQC6J8joy0OjBJBLeZErBaa0lLF0msjaVTFwag85iiWM4dGPzmpAUDD4Ns5g0UmvZV7fxrDRoqrXOsO+KhCgogRrNeBbgpKf1DBEooW06l4mJX6uVzTG70mbpm61CoNjlTzUCWY9Yi2LUMGodEWx9DvQ2KUbasAAAWqAADuEAZ1BqtTkjw5TvDokfgqcYHB3D+nMqRGSZdHamHkAEGiYhUAQDgD8LWGcs0AFpap9yoqZMyIkrJtkbOibarQOg3tbeKUiiTDCyXML3RYOwpKzA6ZiIEpRNDbQYsgX9OTliATMktWDbiNikIxOWFD0G44bHg6pG4U9cqzyQ+6KMIU9hQcmJhowtL0bBnyOzQobyMGEugsRm5FH3xUQcGh2jyJAxYdXCYaqjhkoiZUL4e2RGEx7VwcTC64NKPzkEwI4TWgGNEQLeVEozVGz9o8ZxlSCnU2Bt44vOOQy1SYn3ejQoEkdCmVHVMBJyINjO29Vx8zZrXLuRaZaKz4DOGAcMGUVEQJZTVBipocs7gdwsYNTjUzv1rgheGLIWlQZpSJsbIXPYXga5GlIzPD4mWhQ6diysUyWwzBUTcCGUUJXFMXkqwgcUW8RLBkhMZDYeHUs+fxrXBh5qwGqb9sleBMUpJ5uKIpEYzhWsWb8dSDrnyGqeahEHaUoHOtInLGvMREppQTLxultrY2AsNyvB1pQK7DBgXrPJeBZRJovTMk7WWdCOtaBiQpTmEStBijVLCDGGgg46FKPq3QEiyvLL+7MKSgPzC6GSoUMHq4q6mQZaidcXgoQpP-kj5aqPgcY83gc7wwYUToymJXJ6xOlPCxU9k90kkgzk-R6DmLN9nCOE2Fuww+6sTVuaA0-zab1s8qzQocYIo9hbFmtVHc1W5CSgDsBesGoIm+GBMzuugXG3YA6xMEOcbxgvu2IYSoGKdj5IM1RYoBWvWTJrb6s3sCRQlBVMlHcPdHr1g0FsRSEWdDHvF3qWtCycrlYgGb6EQZxSFBkvxwPi17ZrF2JMZESa88prNYnlzKe-fp-2X3EwqwtAhiqSqKEHHhvNBj-55TE32fvh3ECH3qf-ecwr4sLdqxvAlCojJQ5ySo+qBb-66XxVJvjU0A4dU6wSi569CKpQ5YkuTBDEiCJ52tbT99eyhtd3ZettD3VqibZs5v3geKeluxVbFBDhrNLepJ0zrndO+fHe27q5riGDL5uDJRTAbAlCFAnp+BAA */
         id: 'pokerGame',
         initial: 'idle',
         context: {
@@ -60,9 +75,17 @@ export const getPokerMachine: any = (table: Table) =>
           LEAVE_TABLE: {
             actions: 'removePlayer',
           },
-          JOIN_TABLE: {
-            actions: 'addPlayer',
-          },
+          JOIN_TABLE: [
+            {
+              actions: ['addPlayer', 'startNewHand', 'setLastPlayerToTalk'],
+              target: 'preFlop',
+              cond: 'hasLeastOnePlayer',
+            },
+            {
+              actions: 'addPlayer',
+              target: 'idle',
+            },
+          ],
         },
         states: {
           idle: {
@@ -78,9 +101,10 @@ export const getPokerMachine: any = (table: Table) =>
               startRound: {
                 always: {
                   actions: 'handlePreflop',
-                  target: 'playerTurn',
+                  target: 'checkAllIn',
                 },
               },
+              checkAllIn,
               playerTurn: {
                 initial: 'playerAction',
                 states: {
@@ -88,25 +112,17 @@ export const getPokerMachine: any = (table: Table) =>
                   endTurn: {
                     always: [
                       {
-                        cond: 'isLastPlayerToTalk',
-                        target: `#pokerGame.preFlop.nextRound`,
+                        cond: 'isNotLastPlayerToTalk',
+                        target: 'nextPlayer',
                       },
                       {
-                        target: 'nextPlayer',
+                        cond: 'isLastPlayerToTalk',
+                        target: `#pokerGame.flop`,
                       },
                     ],
                   },
                   nextPlayer,
                 },
-              },
-              nextRound: {
-                always: [
-                  {
-                    target: `#pokerGame.flop`,
-                    cond: 'isMoreThanOnePlayerOnHand',
-                  },
-                  onePlayerNextRoundState,
-                ],
               },
             },
           },
@@ -116,9 +132,10 @@ export const getPokerMachine: any = (table: Table) =>
               startRound: {
                 always: {
                   actions: 'handleFlop',
-                  target: 'playerTurn',
+                  target: 'checkAllIn',
                 },
               },
+              checkAllIn,
               playerTurn: {
                 initial: 'playerAction',
                 states: {
@@ -127,7 +144,7 @@ export const getPokerMachine: any = (table: Table) =>
                     always: [
                       {
                         cond: 'isLastPlayerToTalk',
-                        target: `#pokerGame.flop.nextRound`,
+                        target: `#pokerGame.turn`,
                       },
                       {
                         target: 'nextPlayer',
@@ -136,15 +153,6 @@ export const getPokerMachine: any = (table: Table) =>
                   },
                   nextPlayer,
                 },
-              },
-              nextRound: {
-                always: [
-                  {
-                    target: `#pokerGame.turn`,
-                    cond: 'isMoreThanOnePlayerOnHand',
-                  },
-                  onePlayerNextRoundState,
-                ],
               },
             },
           },
@@ -154,9 +162,10 @@ export const getPokerMachine: any = (table: Table) =>
               startRound: {
                 always: {
                   actions: 'handleTurn',
-                  target: 'playerTurn',
+                  target: 'checkAllIn',
                 },
               },
+              checkAllIn,
               playerTurn: {
                 initial: 'playerAction',
                 states: {
@@ -165,7 +174,7 @@ export const getPokerMachine: any = (table: Table) =>
                     always: [
                       {
                         cond: 'isLastPlayerToTalk',
-                        target: `#pokerGame.turn.nextRound`,
+                        target: `#pokerGame.river`,
                       },
                       {
                         target: 'nextPlayer',
@@ -174,15 +183,6 @@ export const getPokerMachine: any = (table: Table) =>
                   },
                   nextPlayer,
                 },
-              },
-              nextRound: {
-                always: [
-                  {
-                    target: `#pokerGame.river`,
-                    cond: 'isMoreThanOnePlayerOnHand',
-                  },
-                  onePlayerNextRoundState,
-                ],
               },
             },
           },
@@ -192,9 +192,10 @@ export const getPokerMachine: any = (table: Table) =>
               startRound: {
                 always: {
                   actions: 'handleRiver',
-                  target: 'playerTurn',
+                  target: 'checkAllIn',
                 },
               },
+              checkAllIn,
               playerTurn: {
                 initial: 'playerAction',
                 states: {
@@ -203,7 +204,7 @@ export const getPokerMachine: any = (table: Table) =>
                     always: [
                       {
                         cond: 'isLastPlayerToTalk',
-                        target: `#pokerGame.river.nextRound`,
+                        target: `#pokerGame.showdown`,
                       },
                       {
                         target: 'nextPlayer',
@@ -212,15 +213,6 @@ export const getPokerMachine: any = (table: Table) =>
                   },
                   nextPlayer,
                 },
-              },
-              nextRound: {
-                always: [
-                  {
-                    target: `#pokerGame.showdown`,
-                    cond: 'isMoreThanOnePlayerOnHand',
-                  },
-                  onePlayerNextRoundState,
-                ],
               },
             },
           },
@@ -236,9 +228,12 @@ export const getPokerMachine: any = (table: Table) =>
         guards: {
           isBetActive: (ctx) =>
             ctx.table.highestBet > ctx.table.currentPlayer.bet,
-          hasMoreThanOnePlayer: (ctx) => !!ctx.table.players.length,
-          isMoreThanOnePlayerOnHand: (ctx) => ctx.table.players.length > 1,
+          hasMoreThanOnePlayer: (ctx) => ctx.table.hasMoreThanOnePlayer,
+          hasLeastOnePlayer: (ctx) => ctx.table.hasLeastOnePlayer,
           isLastPlayerToTalk: (ctx) => ctx.table.isLastPlayerToTalk,
+          isNotLastPlayerToTalk: (ctx) => !ctx.table.isLastPlayerToTalk,
+          isTwoPlayerLeft: (ctx) => ctx.table.isTwoPlayerLeft,
+          isCurrentPlayerAllIn: (ctx) => ctx.table.currentPlayer.isAllIn,
         },
         actions: {
           addPlayer: (ctx, evt) => ctx.table.addPlayer(evt.player),
@@ -254,7 +249,7 @@ export const getPokerMachine: any = (table: Table) =>
           handleWinWithouShowDown: (ctx) =>
             ctx.table.handleWinWithoutShowDown(),
           handleNextPlayer: (ctx) => ctx.table.handleNextPlayer(),
-          handlePreflop: (ctx) => (ctx.table.currentRound = HandRound.PRE_FLOP),
+          handlePreflop: (ctx) => ctx.table.handlePreFlop(),
           handleFlop: (ctx) => ctx.table.handleFlop(),
           handleTurn: (ctx) => ctx.table.handleTurn(),
           handleRiver: (ctx) => ctx.table.handleRiver(),

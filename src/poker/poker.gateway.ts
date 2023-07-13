@@ -53,10 +53,10 @@ export class PokerGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const table = this.tableService.joinTable(tableId, player);
     this.server.emit(Actions.CREATE_TABLE, table);
     this.server.emit(Actions.ALL_TABLES, this.tableService.allTables);
-    const tables = this.tableService.getUserTables(player.id);
-    client.emit(Actions.ALL_USER_TABLES, tables);
-    client.join(tableId);
     this.server.to(tableId).emit(Actions.JOIN, table);
+    const userTables = this.tableService.getUserTables(player.id);
+    client.emit(Actions.ALL_USER_TABLES, userTables);
+    client.join(tableId);
   }
 
   @SubscribeMessage(Actions.JOIN)
@@ -67,10 +67,10 @@ export class PokerGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const table = this.tableService.joinTable(tableId, player);
 
     this.server.emit(Actions.ALL_TABLES, this.tableService.allTables);
-    const tables = this.tableService.getUserTables(player.id);
-    client.emit(Actions.ALL_USER_TABLES, tables);
+    this.server.to(tableId).emit(Actions.JOIN, table, playerId);
+    const userTables = this.tableService.getUserTables(player.id);
+    client.emit(Actions.ALL_USER_TABLES, userTables);
     client.join(tableId);
-    this.server.to(tableId).emit(Actions.JOIN, table);
   }
 
   @SubscribeMessage(Actions.LEAVE)
@@ -79,13 +79,14 @@ export class PokerGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const player = this.playerService.getPlayer(playerId);
     this.logger.log(`Player ${player.name} is leaving table ${tableId}.`);
     const table = this.tableService.leaveTable(tableId, player);
+    this.server.emit(Actions.ALL_TABLES, this.tableService.allTables);
+    this.server.to(tableId).emit(Actions.LEAVE, table, playerId);
+
     client.emit(
       Actions.ALL_USER_TABLES,
       this.tableService.getUserTables(player.id),
     );
     client.leave(tableId);
-    this.server.emit(Actions.ALL_TABLES, this.tableService.allTables);
-    this.server.to(tableId).emit(Actions.LEAVE, table);
   }
 
   @SubscribeMessage(Actions.BET)

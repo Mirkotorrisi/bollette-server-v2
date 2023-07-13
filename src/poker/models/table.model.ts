@@ -27,6 +27,7 @@ export class Table {
   }
 
   get isFull(): boolean {
+    console.log('isFull ', this.currentPlayersCount >= this.maxPlayers);
     return this.currentPlayersCount >= this.maxPlayers;
   }
 
@@ -53,7 +54,29 @@ export class Table {
   }
 
   get isLastPlayerToTalk(): boolean {
+    console.log(
+      'isLastPlayerToTalk',
+      this.currentPlayerPosition === this.lastPlayerPosition,
+    );
     return this.currentPlayerPosition === this.lastPlayerPosition;
+  }
+
+  get isTwoPlayerLeft(): boolean {
+    console.log(
+      'isTwoPlayerLeft',
+      this.players.filter((p) => !p.isFolded).length === 2,
+    );
+    return this.players.filter((p) => !p.isFolded).length === 2;
+  }
+
+  get hasMoreThanOnePlayer(): boolean {
+    console.log('hasMoreThanOnePlayer', this.players.length > 1);
+    return this.players.length > 1;
+  }
+
+  get hasLeastOnePlayer(): boolean {
+    console.log('hasLeastOnePlayer', !!this.players.length);
+    return !!this.players.length;
   }
 
   addPlayer(player: Player): boolean {
@@ -72,12 +95,16 @@ export class Table {
   }
 
   startNewHand() {
-    console.log('TABLE STARTING NEW HAND');
+    console.log('startNewHand');
     this.isHandOver = false;
+    this.deck = new Deck();
+    this.pot = 0;
+    this.communityCards = [];
     this.currentPlayerPosition =
       (this.dealerPosition + 3) % this.currentPlayersCount;
 
     this.players.forEach((player, index) => {
+      player.reset();
       player.hand = this.deck.dealTwoCards();
       player.position = index;
     });
@@ -92,20 +119,33 @@ export class Table {
     this.highestBet = this.bigBlind;
     this.pot += this.smallBlind + this.bigBlind;
 
+    this.setUpPlayer();
+  }
+
+  setUpPlayer() {
     const availableChoices = ['FOLD'];
     if (this.highestBet > this.currentPlayer.bet) {
       availableChoices.push('CALL', 'RAISE');
     } else {
       availableChoices.push('BET', 'CHECK');
     }
-
     this.currentPlayer.availableChoices = availableChoices;
     this.currentPlayer.state = 'TO_PLAY';
     this.currentPlayer.isCurrentPlayer = true;
-    console.log(this);
+  }
+
+  startNewRound() {
+    this.highestBet = 0;
+    this.currentPlayer.isCurrentPlayer = false;
+    this.currentPlayer.availableChoices = null;
+    this.currentPlayerPosition =
+      (this.dealerPosition + 1) % this.currentPlayersCount;
+    this.players.forEach((p) => (p.bet = 0));
+    this.setUpPlayer();
   }
 
   handleNextDealer() {
+    console.log('handleNextDealer');
     this.dealerPlayer.isDealer = false;
     this.dealerPosition =
       this.dealerPosition + 1 < this.currentPlayersCount
@@ -115,105 +155,117 @@ export class Table {
   }
 
   handleNextPlayer() {
+    console.log('handleNextPlayer');
+    this.currentPlayer.isCurrentPlayer = false;
+    this.currentPlayer.availableChoices = null;
+
     const isTheLastPlayer =
       this.currentPlayerPosition === this.players.length - 1;
     this.currentPlayerPosition = isTheLastPlayer
       ? 0
       : this.currentPlayerPosition + 1;
 
-    if (this.players[this.currentPlayerPosition].isFolded)
+    if (
+      this.players[this.currentPlayerPosition].isFolded ||
+      this.players[this.currentPlayerPosition].isAllIn
+    )
       this.handleNextPlayer();
 
-    const availableChoices = ['FOLD'];
-    if (this.highestBet > this.currentPlayer.bet) {
-      availableChoices.push('CALL', 'RAISE');
-    } else {
-      availableChoices.push('BET', 'CHECK');
-    }
-
-    this.currentPlayer.availableChoices = availableChoices;
-    this.currentPlayer.isCurrentPlayer = true;
+    this.setUpPlayer();
   }
 
   setLastPlayerToTalk() {
+    console.log('setLastPlayerToTalk');
     this.lastPlayerPosition =
       this.currentPlayerPosition - 1 >= 0
         ? this.currentPlayerPosition - 1
         : this.players.length - 1;
 
-    if (this.players[this.lastPlayerPosition].isFolded)
+    if (
+      this.players[this.lastPlayerPosition].isFolded ||
+      this.players[this.lastPlayerPosition].isAllIn
+    )
       this.setLastPlayerToTalk();
-    console.log('setLastPlayerToTalk');
   }
 
   handleWin() {
-    console.log(this, 'win');
+    console.log('handleWin');
     this.currentPlayer.chips += this.pot;
     this.isHandOver = true;
   }
 
   bet(amount: number) {
-    console.log('TABLE bet');
-    this.pot += amount;
-    this.highestBet = amount;
-    this.currentPlayer.doBet(amount);
+    console.log('bet');
+    const amountToBet = Math.min(this.currentPlayer.chips, amount);
+    this.currentPlayer.payChips(amountToBet);
+    this.pot += amountToBet;
+    this.highestBet = this.currentPlayer.bet;
   }
 
   call() {
-    console.log('TABLE call');
+    console.log('call');
     const currentBet = this.currentPlayer.bet;
-    console.log(
-      '🚀 ~ file: table.model.ts:165 ~ Table ~ call ~ this.currentPlayer:',
-      this.currentPlayer.doCall,
+    const amountToCall = Math.min(
+      this.highestBet - currentBet,
+      this.currentPlayer.chips,
     );
-    const amountToCall = this.highestBet - currentBet;
-    this.currentPlayer.doCall(amountToCall);
+    this.currentPlayer.payChips(amountToCall);
     this.pot += amountToCall;
   }
 
   raise(amount: number) {
-    console.log('TABLE raise');
+    console.log('raise');
     const currentBet = this.currentPlayer.bet;
-    const amountToRaise = this.highestBet - currentBet + amount;
+    const amountToRaise = Math.min(
+      this.highestBet - currentBet + amount,
+      this.currentPlayer.chips,
+    );
     this.pot += amountToRaise;
+    this.currentPlayer.payChips(amountToRaise);
     this.highestBet = this.currentPlayer.bet;
-    this.currentPlayer.doRaise(amountToRaise);
   }
 
   fold() {
-    console.log(this, 'fold');
+    console.log('fold');
     this.currentPlayer.doFold();
-    console.log(this, 'fold');
-    // this.handleNextStep();
   }
 
   check() {
-    console.log(this, 'checks');
-    // this.handleNextStep();
+    console.log('checks');
+  }
+
+  handlePreFlop() {
+    console.log('handlePreFlop');
+    this.currentRound = HandRound.FLOP;
   }
 
   handleFlop() {
-    console.log('HANDLE FLOP');
+    console.log('handleFlop');
     this.currentRound = HandRound.FLOP;
     this.communityCards.push(...this.deck.dealFlop());
+    this.startNewRound();
   }
   handleTurn() {
-    console.log('HANDLE TURN', this);
+    console.log('handleTurn');
     this.currentRound = HandRound.TURN;
     this.communityCards.push(this.deck.dealTurnOrRiver());
+    this.startNewRound();
   }
   handleRiver() {
-    console.log('HANDLE RIVER', this);
+    console.log('handleRiver');
     this.currentRound = HandRound.RIVER;
     this.communityCards.push(this.deck.dealTurnOrRiver());
+    this.startNewRound();
   }
 
   handleShowDown() {
     // here goes logic to understand wich is the winning hand
-    console.log('SHOWDOWN', this);
+    console.log('handleShowDown');
   }
   handleWinWithoutShowDown() {
     // here goes logic to understand wich is the winning hand
-    console.log('WIN WITHOUT SHOWDOWN', this);
+    console.log('handleWinWithoutShowDown');
+    const winner = this.players.find((p) => !p.isFolded);
+    winner.chips += this.pot;
   }
 }

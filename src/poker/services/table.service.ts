@@ -20,19 +20,19 @@ export class TableService {
 
   joinTable(tableId: string, player: Player) {
     const tableMachine = this.tables.get(tableId);
-    tableMachine.send({
+    tableMachine?.send({
       type: 'JOIN_TABLE',
       player: new Player(player.name, player.chips, player.id),
     });
-    return tableMachine.initialState.context.table;
+    return tableMachine?.initialState.context.table;
   }
 
   leaveTable(tableId: string, player: Player) {
     const tableMachine = this.tables.get(tableId);
-    tableMachine.send({ type: 'LEAVE_TABLE', player });
-    if (!tableMachine.initialState.context.table.players.length)
+    tableMachine?.send({ type: 'LEAVE_TABLE', player });
+    if (!tableMachine?.initialState.context.table.players.length)
       this.tables.delete(tableId);
-    return tableMachine.initialState.context.table;
+    return tableMachine?.initialState.context.table;
   }
 
   getTable(tableId: string) {
@@ -42,45 +42,45 @@ export class TableService {
 
   handleBet(tableId: string, amount: number) {
     const tableMachine = this.tables.get(tableId);
-    tableMachine.send({
+    tableMachine?.send({
       type: 'BET',
       amount,
     });
-    return tableMachine.initialState.context.table;
+    return tableMachine?.initialState.context.table;
   }
 
   handleRaise(tableId: string, amount: number) {
     const tableMachine = this.tables.get(tableId);
-    tableMachine.send({
+    tableMachine?.send({
       type: 'RAISE',
       amount,
     });
-    return tableMachine.initialState.context.table;
+    return tableMachine?.initialState.context.table;
   }
 
   handleFold(tableId: string) {
     const tableMachine = this.tables.get(tableId);
-    tableMachine.send({
+    tableMachine?.send({
       type: 'FOLD',
     });
-    return tableMachine.initialState.context.table;
+    return tableMachine?.initialState.context.table;
   }
 
   handleCheck(tableId: string) {
     const tableMachine = this.tables.get(tableId);
-    tableMachine.send({
+    tableMachine?.send({
       type: 'CHECK',
     });
 
-    return tableMachine.initialState.context.table;
+    return tableMachine?.initialState.context.table;
   }
 
   handleCall(tableId: string) {
     const tableMachine = this.tables.get(tableId);
-    tableMachine.send({
+    tableMachine?.send({
       type: 'CALL',
     });
-    return tableMachine.initialState.context.table;
+    return tableMachine?.initialState.context.table;
   }
 
   getUserTables(userId: string) {

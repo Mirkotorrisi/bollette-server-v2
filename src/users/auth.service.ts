@@ -56,10 +56,6 @@ export class AuthService {
       email: usernameOrEmail,
       username: usernameOrEmail,
     });
-    console.log(
-      '🚀 ~ file: auth.service.ts:59 ~ AuthService ~ login ~ user',
-      user,
-    );
     const validatePass = await bcrypt.compare(password, user?.password ?? '');
     if (validatePass) {
       const { password, ...userToSend } = user;
