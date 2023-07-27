@@ -1,6 +1,5 @@
 import { createMachine, interpret } from 'xstate';
 import { Table } from '../models/table.model';
-import { HandRound } from '../utils/types';
 
 export interface Ctx {
   table: Table;
@@ -47,20 +46,6 @@ const nextPlayer = {
   },
 };
 
-const checkAllIn = {
-  on: {
-    '': [
-      {
-        target: 'playerTurn.endTurn',
-        cond: 'isCurrentPlayerAllIn',
-      },
-      {
-        target: 'playerTurn.playerAction',
-      },
-    ],
-  },
-};
-
 export const getPokerMachine: any = (table: Table) =>
   interpret(
     createMachine<Ctx>(
@@ -101,10 +86,9 @@ export const getPokerMachine: any = (table: Table) =>
               startRound: {
                 always: {
                   actions: 'handlePreflop',
-                  target: 'checkAllIn',
+                  target: 'playerTurn',
                 },
               },
-              checkAllIn,
               playerTurn: {
                 initial: 'playerAction',
                 states: {
@@ -132,10 +116,9 @@ export const getPokerMachine: any = (table: Table) =>
               startRound: {
                 always: {
                   actions: 'handleFlop',
-                  target: 'checkAllIn',
+                  target: 'playerTurn',
                 },
               },
-              checkAllIn,
               playerTurn: {
                 initial: 'playerAction',
                 states: {
@@ -162,10 +145,9 @@ export const getPokerMachine: any = (table: Table) =>
               startRound: {
                 always: {
                   actions: 'handleTurn',
-                  target: 'checkAllIn',
+                  target: 'playerTurn',
                 },
               },
-              checkAllIn,
               playerTurn: {
                 initial: 'playerAction',
                 states: {
@@ -192,10 +174,9 @@ export const getPokerMachine: any = (table: Table) =>
               startRound: {
                 always: {
                   actions: 'handleRiver',
-                  target: 'checkAllIn',
+                  target: 'playerTurn',
                 },
               },
-              checkAllIn,
               playerTurn: {
                 initial: 'playerAction',
                 states: {
@@ -205,6 +186,7 @@ export const getPokerMachine: any = (table: Table) =>
                       {
                         cond: 'isLastPlayerToTalk',
                         target: `#pokerGame.showdown`,
+                        actions: 'handleShowDown',
                       },
                       {
                         target: 'nextPlayer',
@@ -217,9 +199,11 @@ export const getPokerMachine: any = (table: Table) =>
             },
           },
           showdown: {
-            always: {
-              target: 'idle',
-              actions: ['handleShowDown', 'handleNextDealer'],
+            on: {
+              RESTART: {
+                actions: 'handleNextDealer',
+                target: 'idle',
+              },
             },
           },
         },
@@ -233,7 +217,6 @@ export const getPokerMachine: any = (table: Table) =>
           isLastPlayerToTalk: (ctx) => ctx.table.isLastPlayerToTalk,
           isNotLastPlayerToTalk: (ctx) => !ctx.table.isLastPlayerToTalk,
           isTwoPlayerLeft: (ctx) => ctx.table.isTwoPlayerLeft,
-          isCurrentPlayerAllIn: (ctx) => ctx.table.currentPlayer.isAllIn,
         },
         actions: {
           addPlayer: (ctx, evt) => ctx.table.addPlayer(evt.player),

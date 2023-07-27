@@ -1,6 +1,8 @@
+import { formatHand } from '../utils/handsUtils';
 import { Card, HandRound } from '../utils/types';
 import { Deck } from './deck.model';
 import { Player } from './player.model';
+import { Hand } from 'pokersolver';
 
 export class Table {
   dealerPosition = 0;
@@ -27,8 +29,9 @@ export class Table {
   }
 
   get isFull(): boolean {
-    console.log('isFull ', this.currentPlayersCount >= this.maxPlayers);
-    return this.currentPlayersCount >= this.maxPlayers;
+    const bool = this.currentPlayersCount >= this.maxPlayers;
+    console.log('isFull ', bool);
+    return bool;
   }
 
   get dealerPlayer(): Player {
@@ -54,29 +57,27 @@ export class Table {
   }
 
   get isLastPlayerToTalk(): boolean {
-    console.log(
-      'isLastPlayerToTalk',
-      this.currentPlayerPosition === this.lastPlayerPosition,
-    );
-    return this.currentPlayerPosition === this.lastPlayerPosition;
+    const bool = this.currentPlayerPosition === this.lastPlayerPosition;
+    console.log('isLastPlayerToTalk', bool);
+    return bool;
   }
 
   get isTwoPlayerLeft(): boolean {
-    console.log(
-      'isTwoPlayerLeft',
-      this.players.filter((p) => !p.isFolded).length === 2,
-    );
-    return this.players.filter((p) => !p.isFolded).length === 2;
+    const bool = this.players.filter((p) => !p.isFolded).length === 2;
+    console.log('isTwoPlayerLeft', bool);
+    return bool;
   }
 
   get hasMoreThanOnePlayer(): boolean {
-    console.log('hasMoreThanOnePlayer', this.players.length > 1);
-    return this.players.length > 1;
+    const bool = this.players.filter((p) => p.chips > 0).length > 1;
+    console.log('hasMoreThanOnePlayer', bool);
+    return bool;
   }
 
   get hasLeastOnePlayer(): boolean {
-    console.log('hasLeastOnePlayer', !!this.players.length);
-    return !!this.players.length;
+    const bool = !!this.players.length;
+    console.log('hasLeastOnePlayer', bool);
+    return bool;
   }
 
   addPlayer(player: Player): boolean {
@@ -105,8 +106,10 @@ export class Table {
 
     this.players.forEach((player, index) => {
       player.reset();
-      player.hand = this.deck.dealTwoCards();
-      player.position = index;
+      if (player.chips > 0) {
+        player.hand = this.deck.dealTwoCards();
+        player.position = index;
+      }
     });
     this.dealerPlayer.isDealer = true;
     // pay blinds
@@ -124,8 +127,16 @@ export class Table {
 
   setUpPlayer() {
     const availableChoices = ['FOLD'];
+    if (this.currentPlayer.isAllIn) {
+      this.handleNextPlayer();
+      return;
+    }
+
     if (this.highestBet > this.currentPlayer.bet) {
-      availableChoices.push('CALL', 'RAISE');
+      availableChoices.push('CALL');
+      if (this.highestBet < this.currentPlayer.chips) {
+        availableChoices.push('RAISE');
+      }
     } else {
       availableChoices.push('BET', 'CHECK');
     }
@@ -165,11 +176,26 @@ export class Table {
       ? 0
       : this.currentPlayerPosition + 1;
 
-    if (
-      this.players[this.currentPlayerPosition].isFolded ||
-      this.players[this.currentPlayerPosition].isAllIn
-    )
-      this.handleNextPlayer();
+    if (this.currentPlayer.isFolded || this.currentPlayer.isAllIn) {
+      if (this.isLastPlayerToTalk) {
+        switch (this.currentRound) {
+          case HandRound.PRE_FLOP:
+            this.handleFlop();
+            break;
+          case HandRound.FLOP:
+            this.handleTurn();
+            break;
+          case HandRound.TURN:
+            this.handleRiver();
+            break;
+          case HandRound.RIVER:
+            this.handleShowDown();
+            break;
+        }
+      } else {
+        this.handleNextPlayer();
+      }
+    }
 
     this.setUpPlayer();
   }
@@ -261,6 +287,45 @@ export class Table {
   handleShowDown() {
     // here goes logic to understand wich is the winning hand
     console.log('handleShowDown');
+    this.currentRound = HandRound.SHOWDOWN;
+    const handsAndIds = this.players
+      .filter((p) => !p.isFolded)
+      .map((p) => {
+        const handParsed = formatHand([...p.hand, ...this.communityCards]);
+        const handSolved = Hand.solve(handParsed);
+        const handToString = handSolved.toString();
+        return {
+          id: p.id,
+          hand: handSolved,
+          handToString,
+        };
+      });
+
+    const winnerHand = Hand.winners(handsAndIds.map((h) => h.hand)).toString();
+
+    if (Array.isArray(winnerHand)) {
+      const winners = handsAndIds.filter((obj) =>
+        winnerHand.some((wh) => JSON.parse(wh) === obj.handToString),
+      );
+
+      winners.forEach((obj) => {
+        const player = this.players.find((p) => p.id === obj.id);
+        player.chips += this.pot / winners.length;
+        console.log(`${player.name} wins ${this.pot / winners.length}`);
+      });
+    } else {
+      const winnerId = handsAndIds.find(
+        (obj) => obj.handToString === winnerHand,
+      );
+      const player = this.players.find((p) => p.id === winnerId.id);
+      player.chips += this.pot;
+      console.log(`${player.name} wins ${this.pot}`);
+    }
+    this.isHandOver = true;
+    this.players.forEach((p) => {
+      p.isCurrentPlayer = false;
+      p.availableChoices = [];
+    });
   }
   handleWinWithoutShowDown() {
     // here goes logic to understand wich is the winning hand

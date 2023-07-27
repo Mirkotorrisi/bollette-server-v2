@@ -4,20 +4,40 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
   SubscribeMessage,
+  OnGatewayInit,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Injectable, Logger, UseGuards } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnApplicationShutdown,
+  UseGuards,
+} from '@nestjs/common';
 import { TableService } from './services/table.service';
-import { Actions, TableAndAmount, TableAndPlayer } from './utils/types';
+import {
+  Actions,
+  TableAndAmount,
+  TableAndPlayer,
+  XStateActions,
+} from './utils/types';
 import { TablePlayerGuard } from './guard/table-player.guard';
 import { NoEmptyDataGuard } from './guard/no-empty-data.guard';
 import { PlayerService } from './services/player.service';
 import { TableAmountGuard } from './guard/table-amount.guard';
+import { Subscription } from 'rxjs';
 
 @Injectable()
 @WebSocketGateway({ cors: true })
 @UseGuards(NoEmptyDataGuard)
-export class PokerGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class PokerGateway
+  implements
+    OnGatewayConnection,
+    OnGatewayDisconnect,
+    OnGatewayInit,
+    OnApplicationShutdown
+{
+  private tableSubscription: Subscription;
+
   constructor(
     private readonly tableService: TableService,
     private readonly playerService: PlayerService,
@@ -45,6 +65,30 @@ export class PokerGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.logger.log(`Client ${client.id} disconnected from poker gateway.`);
   }
 
+  afterInit(server): void {
+    this.tableSubscription = this.tableService.tableSubject$.subscribe({
+      next: ({ table, action }) => {
+        server.to(table.id).emit(Actions.ASK_FOR_CARDS, table.id);
+        switch (action) {
+          case XStateActions.FOLD:
+            this.logger.log(`Forced fold due to timeout ${table.id}.`);
+            server.to(table.id).emit(Actions.FOLD, table);
+            break;
+          case XStateActions.RESTART:
+            this.logger.log(`Starting a new hand on ${table.id}.`);
+            server.to(table.id).emit(Actions.CHECK, table);
+          default:
+            break;
+        }
+      },
+      error: (err) => server.emit('exception', err),
+    });
+  }
+
+  onApplicationShutdown() {
+    this.tableSubscription.unsubscribe();
+  }
+
   @SubscribeMessage(Actions.CREATE_TABLE)
   handleCreateTable(client: Socket, playerId: string) {
     const player = this.playerService.getPlayer(playerId);
@@ -65,23 +109,24 @@ export class PokerGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const player = this.playerService.getPlayer(playerId);
     this.logger.log(`Player ${player.name} is joining table ${tableId}.`);
     const table = this.tableService.joinTable(tableId, player);
-
     this.server.emit(Actions.ALL_TABLES, this.tableService.allTables);
     this.server.to(tableId).emit(Actions.JOIN, table, playerId);
     const userTables = this.tableService.getUserTables(player.id);
     client.emit(Actions.ALL_USER_TABLES, userTables);
     client.join(tableId);
+    this.server.to(table.id).emit(Actions.ASK_FOR_CARDS, table.id);
   }
 
   @SubscribeMessage(Actions.LEAVE)
   @UseGuards(TablePlayerGuard)
   handleLeaveTable(client: Socket, { tableId, playerId }: TableAndPlayer) {
     const player = this.playerService.getPlayer(playerId);
+    if (!player) return;
     this.logger.log(`Player ${player.name} is leaving table ${tableId}.`);
     const table = this.tableService.leaveTable(tableId, player);
     this.server.emit(Actions.ALL_TABLES, this.tableService.allTables);
     this.server.to(tableId).emit(Actions.LEAVE, table, playerId);
-
+    this.getPlayerCards(client, tableId);
     client.emit(
       Actions.ALL_USER_TABLES,
       this.tableService.getUserTables(player.id),
@@ -89,13 +134,21 @@ export class PokerGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.leave(tableId);
   }
 
+  @SubscribeMessage(Actions.GET_PLAYER_CARDS)
+  getPlayerCards(client: Socket, tableId: string) {
+    const table = this.tableService.getTable(tableId);
+    const playerName = client.handshake.auth.name;
+    const player = table.players.find((p) => p.name === playerName);
+    client.emit(Actions.GET_PLAYER_CARDS, { tableId, hand: player.hand });
+  }
+
   @SubscribeMessage(Actions.BET)
   @UseGuards(TableAmountGuard)
   handleBet(client: Socket, { tableId, amount }: TableAndAmount) {
     this.logger.log(`Player bets ${amount} on table ${tableId}.`);
     const table = this.tableService.handleBet(tableId, amount);
-
     this.server.to(tableId).emit(Actions.BET, table);
+    this.getPlayerCards(client, tableId);
   }
 
   @SubscribeMessage(Actions.RAISE)
@@ -104,6 +157,7 @@ export class PokerGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.logger.log(`Player raise ${amount} on table ${tableId}.`);
     const table = this.tableService.handleRaise(tableId, amount);
     this.server.to(tableId).emit(Actions.RAISE, table);
+    this.getPlayerCards(client, tableId);
   }
 
   @SubscribeMessage(Actions.CHECK)
@@ -111,6 +165,7 @@ export class PokerGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.logger.log(`Player check on table ${tableId}.`);
     const table = this.tableService.handleCheck(tableId);
     this.server.to(tableId).emit(Actions.CHECK, table);
+    this.getPlayerCards(client, tableId);
   }
 
   @SubscribeMessage(Actions.FOLD)
@@ -118,6 +173,7 @@ export class PokerGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.logger.log(`Player fold on table ${tableId}.`);
     const table = this.tableService.handleFold(tableId);
     this.server.to(tableId).emit(Actions.FOLD, table);
+    this.getPlayerCards(client, tableId);
   }
 
   @SubscribeMessage(Actions.CALL)
@@ -125,5 +181,6 @@ export class PokerGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.logger.log(`Player call on table ${tableId}.`);
     const table = this.tableService.handleCall(tableId);
     this.server.to(tableId).emit(Actions.CALL, table);
+    this.getPlayerCards(client, tableId);
   }
 }

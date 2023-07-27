@@ -3,12 +3,17 @@ import { Player } from '../models/player.model';
 import { v4 as uuidv4 } from 'uuid';
 import { Table } from '../models/table.model';
 import { getPokerMachine } from '../machines/pokerMachine';
+import { Subject } from 'rxjs';
+import { HandRound, XStateActions } from '../utils/types';
 
 type PokerMachine = ReturnType<typeof getPokerMachine>;
-
+type SubscriptionPayload = { table: Table; action: XStateActions };
+const TIME_BANK = 20000;
 @Injectable()
 export class TableService {
   private tables: Map<string, PokerMachine> = new Map<string, PokerMachine>();
+  private subject = new Subject<SubscriptionPayload>();
+  private intervals = {};
 
   createTable() {
     const tableId = uuidv4();
@@ -24,15 +29,24 @@ export class TableService {
       type: 'JOIN_TABLE',
       player: new Player(player.name, player.chips, player.id),
     });
-    return tableMachine?.initialState.context.table;
+    this.createTableTimeout(tableId);
+    if (this.isShowDown(tableMachine)) {
+      this.startNewHandTimeout(tableMachine);
+      return tableMachine?.initialState.context.table;
+    }
+    return this.filterPlayerCards(tableMachine?.initialState.context.table);
   }
 
   leaveTable(tableId: string, player: Player) {
     const tableMachine = this.tables.get(tableId);
-    tableMachine?.send({ type: 'LEAVE_TABLE', player });
+    tableMachine?.send({ type: XStateActions.LEAVE_TABLE, player });
     if (!tableMachine?.initialState.context.table.players.length)
       this.tables.delete(tableId);
-    return tableMachine?.initialState.context.table;
+    if (this.isShowDown(tableMachine)) {
+      this.startNewHandTimeout(tableMachine);
+      return tableMachine?.initialState.context.table;
+    }
+    return this.filterPlayerCards(tableMachine?.initialState.context.table);
   }
 
   getTable(tableId: string) {
@@ -41,46 +55,96 @@ export class TableService {
   }
 
   handleBet(tableId: string, amount: number) {
+    this.stopTimeout(tableId);
     const tableMachine = this.tables.get(tableId);
     tableMachine?.send({
-      type: 'BET',
+      type: XStateActions.BET,
       amount,
     });
-    return tableMachine?.initialState.context.table;
+    this.createTableTimeout(tableId);
+    if (this.isShowDown(tableMachine)) {
+      this.startNewHandTimeout(tableMachine);
+      return tableMachine?.initialState.context.table;
+    }
+    return this.filterPlayerCards(tableMachine?.initialState.context.table);
   }
 
   handleRaise(tableId: string, amount: number) {
+    this.stopTimeout(tableId);
     const tableMachine = this.tables.get(tableId);
     tableMachine?.send({
-      type: 'RAISE',
+      type: XStateActions.RAISE,
       amount,
     });
-    return tableMachine?.initialState.context.table;
+    this.createTableTimeout(tableId);
+    if (this.isShowDown(tableMachine)) {
+      this.startNewHandTimeout(tableMachine);
+      return tableMachine?.initialState.context.table;
+    }
+    return this.filterPlayerCards(tableMachine?.initialState.context.table);
   }
 
   handleFold(tableId: string) {
+    this.stopTimeout(tableId);
     const tableMachine = this.tables.get(tableId);
     tableMachine?.send({
-      type: 'FOLD',
+      type: XStateActions.FOLD,
     });
-    return tableMachine?.initialState.context.table;
+    this.createTableTimeout(tableId);
+    if (this.isShowDown(tableMachine)) {
+      this.startNewHandTimeout(tableMachine);
+      return tableMachine?.initialState.context.table;
+    }
+    return this.filterPlayerCards(tableMachine?.initialState.context.table);
   }
 
   handleCheck(tableId: string) {
+    this.stopTimeout(tableId);
     const tableMachine = this.tables.get(tableId);
     tableMachine?.send({
-      type: 'CHECK',
+      type: XStateActions.CHECK,
     });
-
-    return tableMachine?.initialState.context.table;
+    this.createTableTimeout(tableId);
+    if (this.isShowDown(tableMachine)) {
+      this.startNewHandTimeout(tableMachine);
+      return tableMachine?.initialState.context.table;
+    }
+    return this.filterPlayerCards(tableMachine?.initialState.context.table);
   }
 
   handleCall(tableId: string) {
+    this.stopTimeout(tableId);
     const tableMachine = this.tables.get(tableId);
     tableMachine?.send({
-      type: 'CALL',
+      type: XStateActions.CALL,
     });
-    return tableMachine?.initialState.context.table;
+    this.createTableTimeout(tableId);
+    if (this.isShowDown(tableMachine)) {
+      this.startNewHandTimeout(tableMachine);
+      return tableMachine?.initialState.context.table;
+    }
+    return this.filterPlayerCards(tableMachine?.initialState.context.table);
+  }
+
+  isShowDown(tableMachine: PokerMachine) {
+    return (
+      tableMachine?.initialState.context.table.currentRound ===
+      HandRound.SHOWDOWN
+    );
+  }
+
+  startNewHandTimeout(tableMachine: PokerMachine) {
+    setTimeout(() => {
+      tableMachine.send({
+        type: XStateActions.RESTART,
+      });
+      this.subject.next({
+        table: this.filterPlayerCards(
+          tableMachine?.initialState.context.table,
+        ) as Table,
+        action: XStateActions.RESTART,
+      });
+    }, 4000);
   }
 
   getUserTables(userId: string) {
@@ -88,7 +152,41 @@ export class TableService {
       .filter(([_, m]: [string, PokerMachine]) =>
         m.machine.context.table.players.some((p) => p.id === userId),
       )
-      .map(([id, m]) => [id, m.machine.context.table]);
+      .map(([id, m]) => [id, this.filterPlayerCards(m.machine.context.table)]);
+  }
+
+  createTableTimeout(tableId: string) {
+    this.stopTimeout(tableId);
+    const tableMachine = this.tables.get(tableId);
+    if (!tableMachine) return;
+    const interval = setTimeout(() => {
+      tableMachine?.send({
+        type: 'FOLD',
+      });
+      this.subject.next({
+        table: this.filterPlayerCards(
+          tableMachine?.initialState.context.table,
+        ) as Table,
+        action: XStateActions.FOLD,
+      });
+      this.createTableTimeout(tableId);
+    }, TIME_BANK);
+    this.intervals[tableId] = interval;
+  }
+
+  filterPlayerCards(table: Table) {
+    return {
+      ...table,
+      players: table.players.map((p) => ({ ...p, hand: [] })),
+    };
+  }
+
+  stopTimeout(tableId: string) {
+    clearTimeout(this.intervals[tableId]);
+  }
+
+  get tableSubject$() {
+    return this.subject.asObservable();
   }
 
   get allTables() {

@@ -1,7 +1,14 @@
-import { Hand } from 'pokersolver';
+import { Card } from './types';
 
-export const getHandsVinner = (hands: any[]) => {
-  const parsedHands = hands.map((h) => Hand.solve(h));
-
-  return Hand.winners(parsedHands).toString();
+const rankToLetter = {
+  14: 'A',
+  13: 'K',
+  12: 'Q',
+  11: 'J',
+  10: 'T',
 };
+
+const formatCard = (card: Card) =>
+  `${rankToLetter[card.rank] ?? card.rank}${card.suit.charAt(0)}`;
+
+export const formatHand = (hand: Card[]) => hand.map(formatCard);

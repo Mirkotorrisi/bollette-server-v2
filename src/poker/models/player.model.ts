@@ -31,7 +31,6 @@ export class Player {
     return this.state === 'FOLD';
   }
   get isAllIn() {
-    console.log('CHECKING IS ALL IN??', this.state === 'ALL_IN');
     return this.state === 'ALL_IN';
   }
   get isSitOut() {

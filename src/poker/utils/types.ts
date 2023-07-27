@@ -54,6 +54,19 @@ export enum Actions {
   GET_TABLE = 'table',
   ALL_TABLES = 'allTables',
   ALL_USER_TABLES = 'allUserTables',
+  GET_PLAYER_CARDS = 'getPlayerCards',
+  ASK_FOR_CARDS = 'askForCards',
+}
+
+export enum XStateActions {
+  BET = 'BET',
+  FOLD = 'FOLD',
+  RAISE = 'RAISE',
+  CHECK = 'CHECK',
+  CALL = 'CALL',
+  JOIN_TABLE = 'JOIN_TABLE',
+  LEAVE_TABLE = 'LEAVE_TABLE',
+  RESTART = 'RESTART',
 }
 
 export interface TableAndPlayer {
