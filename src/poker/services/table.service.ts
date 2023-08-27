@@ -5,12 +5,16 @@ import { Table } from '../models/table.model';
 import { getPokerMachine } from '../machines/pokerMachine';
 import { Subject } from 'rxjs';
 import { HandRound, XStateActions } from '../utils/types';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 
 type PokerMachine = ReturnType<typeof getPokerMachine>;
 type SubscriptionPayload = { table: Table; action: XStateActions };
-const TIME_BANK = 20000;
+// const TIME_BANK = 20000;
+const TIME_BANK = 2000000;
 @Injectable()
 export class TableService {
+  constructor(private eventEmitter: EventEmitter2) {}
+
   private tables: Map<string, PokerMachine> = new Map<string, PokerMachine>();
   private subject = new Subject<SubscriptionPayload>();
   private intervals = {};
@@ -18,7 +22,7 @@ export class TableService {
   createTable() {
     const tableId = uuidv4();
     const table = new Table(9, tableId);
-    const machine = getPokerMachine(table);
+    const machine = getPokerMachine(table, this.eventEmitter);
     this.tables.set(tableId, machine);
     return tableId;
   }
@@ -51,7 +55,7 @@ export class TableService {
 
   getTable(tableId: string) {
     // Retrieve the table state from memory
-    return this.tables.get(tableId).machine.context.table;
+    return this.tables.get(tableId)?.machine.context.table;
   }
 
   handleBet(tableId: string, amount: number) {
@@ -131,6 +135,24 @@ export class TableService {
       tableMachine?.initialState.context.table.currentRound ===
       HandRound.SHOWDOWN
     );
+  }
+
+  @OnEvent('checkIfAllIn')
+  checkIfAllIn(payload: { tableId: string }) {
+    const tableMachine = this.tables.get(payload.tableId);
+    const player = tableMachine?.initialState.context.table.currentPlayer;
+    const bool = player?.isAllIn;
+    console.log('checkIfAllIn:', bool, player.name, player.chips);
+    if (bool) {
+      console.log(
+        'AUTOMATIC CHECK',
+        tableMachine?.initialState.context.table.currentPlayer.name,
+      );
+
+      tableMachine?.send({
+        type: XStateActions.CHECK,
+      });
+    }
   }
 
   startNewHandTimeout(tableMachine: PokerMachine) {

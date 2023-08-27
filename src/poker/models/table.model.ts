@@ -127,21 +127,19 @@ export class Table {
 
   setUpPlayer() {
     const availableChoices = ['FOLD'];
-    if (this.currentPlayer.isAllIn) {
-      this.handleNextPlayer();
-      return;
+    if (!this.currentPlayer.isAllIn && !this.currentPlayer.isFolded) {
+      if (this.highestBet > this.currentPlayer.bet) {
+        availableChoices.push('CALL');
+        if (this.highestBet < this.currentPlayer.chips) {
+          availableChoices.push('RAISE');
+        }
+      } else {
+        availableChoices.push('BET', 'CHECK');
+      }
+      this.currentPlayer.availableChoices = availableChoices;
+      this.currentPlayer.state = 'TO_PLAY';
     }
 
-    if (this.highestBet > this.currentPlayer.bet) {
-      availableChoices.push('CALL');
-      if (this.highestBet < this.currentPlayer.chips) {
-        availableChoices.push('RAISE');
-      }
-    } else {
-      availableChoices.push('BET', 'CHECK');
-    }
-    this.currentPlayer.availableChoices = availableChoices;
-    this.currentPlayer.state = 'TO_PLAY';
     this.currentPlayer.isCurrentPlayer = true;
   }
 
@@ -176,26 +174,7 @@ export class Table {
       ? 0
       : this.currentPlayerPosition + 1;
 
-    if (this.currentPlayer.isFolded || this.currentPlayer.isAllIn) {
-      if (this.isLastPlayerToTalk) {
-        switch (this.currentRound) {
-          case HandRound.PRE_FLOP:
-            this.handleFlop();
-            break;
-          case HandRound.FLOP:
-            this.handleTurn();
-            break;
-          case HandRound.TURN:
-            this.handleRiver();
-            break;
-          case HandRound.RIVER:
-            this.handleShowDown();
-            break;
-        }
-      } else {
-        this.handleNextPlayer();
-      }
-    }
+    console.log('CURRENT PLAYER POSITION ', this.currentPlayerPosition);
 
     this.setUpPlayer();
   }
@@ -206,12 +185,6 @@ export class Table {
       this.currentPlayerPosition - 1 >= 0
         ? this.currentPlayerPosition - 1
         : this.players.length - 1;
-
-    if (
-      this.players[this.lastPlayerPosition].isFolded ||
-      this.players[this.lastPlayerPosition].isAllIn
-    )
-      this.setLastPlayerToTalk();
   }
 
   handleWin() {
@@ -257,7 +230,8 @@ export class Table {
   }
 
   check() {
-    console.log('checks');
+    console.log('check');
+    this.currentPlayer.doCheck();
   }
 
   handlePreFlop() {

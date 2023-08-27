@@ -1,8 +1,10 @@
 import { createMachine, interpret } from 'xstate';
 import { Table } from '../models/table.model';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 export interface Ctx {
   table: Table;
+  eventEmitter: EventEmitter2;
 }
 
 const playerAction = {
@@ -14,7 +16,7 @@ const playerAction = {
     },
     CALL: {
       cond: 'isBetActive',
-      actions: 'call',
+      actions: ['setLastPlayerToTalk', 'call'],
       target: 'endTurn',
     },
     FOLD: [
@@ -25,11 +27,11 @@ const playerAction = {
       },
       {
         target: 'endTurn',
-        actions: ['fold'],
+        actions: ['setLastPlayerToTalk', 'fold'],
       },
     ],
     CHECK: {
-      actions: 'check',
+      actions: ['setLastPlayerToTalk', 'check'],
       target: 'endTurn',
     },
     BET: {
@@ -42,11 +44,14 @@ const playerAction = {
 const nextPlayer = {
   always: {
     target: 'playerAction',
-    actions: 'handleNextPlayer',
+    actions: ['handleNextPlayer', 'checkIfAllIn'],
   },
 };
 
-export const getPokerMachine: any = (table: Table) =>
+export const getPokerMachine: any = (
+  table: Table,
+  eventEmitter: EventEmitter2,
+) =>
   interpret(
     createMachine<Ctx>(
       {
@@ -55,6 +60,7 @@ export const getPokerMachine: any = (table: Table) =>
         initial: 'idle',
         context: {
           table,
+          eventEmitter,
         },
         on: {
           LEAVE_TABLE: {
@@ -85,7 +91,7 @@ export const getPokerMachine: any = (table: Table) =>
             states: {
               startRound: {
                 always: {
-                  actions: 'handlePreflop',
+                  actions: ['handlePreflop', 'checkIfAllIn'],
                   target: 'playerTurn',
                 },
               },
@@ -115,7 +121,7 @@ export const getPokerMachine: any = (table: Table) =>
             states: {
               startRound: {
                 always: {
-                  actions: 'handleFlop',
+                  actions: ['handleFlop', 'checkIfAllIn'],
                   target: 'playerTurn',
                 },
               },
@@ -144,7 +150,7 @@ export const getPokerMachine: any = (table: Table) =>
             states: {
               startRound: {
                 always: {
-                  actions: 'handleTurn',
+                  actions: ['handleTurn', 'checkIfAllIn'],
                   target: 'playerTurn',
                 },
               },
@@ -173,7 +179,7 @@ export const getPokerMachine: any = (table: Table) =>
             states: {
               startRound: {
                 always: {
-                  actions: 'handleRiver',
+                  actions: ['handleRiver', 'checkIfAllIn'],
                   target: 'playerTurn',
                 },
               },
@@ -237,6 +243,8 @@ export const getPokerMachine: any = (table: Table) =>
           handleTurn: (ctx) => ctx.table.handleTurn(),
           handleRiver: (ctx) => ctx.table.handleRiver(),
           handleNextDealer: (ctx) => ctx.table.handleNextDealer(),
+          checkIfAllIn: (ctx) =>
+            ctx.eventEmitter.emit('checkIfAllIn', { tableId: ctx.table.id }),
         },
       },
     ),

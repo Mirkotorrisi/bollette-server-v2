@@ -12,10 +12,12 @@ import { RankingModule } from './ranking/ranking.module';
 import { SlotModule } from './slot/slot.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PokerModule } from './poker/poker.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
     UsersModule,
+    EventEmitterModule.forRoot(),
     ScheduleModule.forRoot(),
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot({

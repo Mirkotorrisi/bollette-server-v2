@@ -64,7 +64,11 @@ export class Player {
   }
 
   public doCheck() {
-    this.state = 'IDLE';
-    console.log(this.name, ' checks');
+    if (this.isAllIn) {
+      console.log(this.name, ' automatic checks');
+    } else {
+      this.state = 'IDLE';
+      console.log(this.name, ' checks');
+    }
   }
 }
