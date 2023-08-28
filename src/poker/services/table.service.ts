@@ -34,10 +34,7 @@ export class TableService {
       player: new Player(player.name, player.chips, player.id),
     });
     this.createTableTimeout(tableId);
-    if (this.isShowDown(tableMachine)) {
-      this.startNewHandTimeout(tableMachine);
-      return tableMachine?.initialState.context.table;
-    }
+
     return this.filterPlayerCards(tableMachine?.initialState.context.table);
   }
 
@@ -46,10 +43,7 @@ export class TableService {
     tableMachine?.send({ type: XStateActions.LEAVE_TABLE, player });
     if (!tableMachine?.initialState.context.table.players.length)
       this.tables.delete(tableId);
-    if (this.isShowDown(tableMachine)) {
-      this.startNewHandTimeout(tableMachine);
-      return tableMachine?.initialState.context.table;
-    }
+
     return this.filterPlayerCards(tableMachine?.initialState.context.table);
   }
 
@@ -66,10 +60,7 @@ export class TableService {
       amount,
     });
     this.createTableTimeout(tableId);
-    if (this.isShowDown(tableMachine)) {
-      this.startNewHandTimeout(tableMachine);
-      return tableMachine?.initialState.context.table;
-    }
+
     return this.filterPlayerCards(tableMachine?.initialState.context.table);
   }
 
@@ -81,10 +72,7 @@ export class TableService {
       amount,
     });
     this.createTableTimeout(tableId);
-    if (this.isShowDown(tableMachine)) {
-      this.startNewHandTimeout(tableMachine);
-      return tableMachine?.initialState.context.table;
-    }
+
     return this.filterPlayerCards(tableMachine?.initialState.context.table);
   }
 
@@ -95,10 +83,7 @@ export class TableService {
       type: XStateActions.FOLD,
     });
     this.createTableTimeout(tableId);
-    if (this.isShowDown(tableMachine)) {
-      this.startNewHandTimeout(tableMachine);
-      return tableMachine?.initialState.context.table;
-    }
+
     return this.filterPlayerCards(tableMachine?.initialState.context.table);
   }
 
@@ -109,10 +94,7 @@ export class TableService {
       type: XStateActions.CHECK,
     });
     this.createTableTimeout(tableId);
-    if (this.isShowDown(tableMachine)) {
-      this.startNewHandTimeout(tableMachine);
-      return tableMachine?.initialState.context.table;
-    }
+
     return this.filterPlayerCards(tableMachine?.initialState.context.table);
   }
 
@@ -123,18 +105,8 @@ export class TableService {
       type: XStateActions.CALL,
     });
     this.createTableTimeout(tableId);
-    if (this.isShowDown(tableMachine)) {
-      this.startNewHandTimeout(tableMachine);
-      return tableMachine?.initialState.context.table;
-    }
-    return this.filterPlayerCards(tableMachine?.initialState.context.table);
-  }
 
-  isShowDown(tableMachine: PokerMachine) {
-    return (
-      tableMachine?.initialState.context.table.currentRound ===
-      HandRound.SHOWDOWN
-    );
+    return this.filterPlayerCards(tableMachine?.initialState.context.table);
   }
 
   @OnEvent('checkIfAllIn')
@@ -155,18 +127,22 @@ export class TableService {
     }
   }
 
-  startNewHandTimeout(tableMachine: PokerMachine) {
-    setTimeout(() => {
-      tableMachine.send({
-        type: XStateActions.RESTART,
-      });
-      this.subject.next({
-        table: this.filterPlayerCards(
-          tableMachine?.initialState.context.table,
-        ) as Table,
-        action: XStateActions.RESTART,
-      });
-    }, 4000);
+  @OnEvent('startNewHand')
+  startNewHandTimeout(payload: { tableId: string }) {
+    const tableMachine = this.tables.get(payload.tableId);
+    if (tableMachine?.initialState.context.table.hasMoreThanOnePlayer) {
+      setTimeout(() => {
+        tableMachine.send({
+          type: XStateActions.RESTART,
+        });
+        this.subject.next({
+          table: this.filterPlayerCards(
+            tableMachine?.initialState.context.table,
+          ) as Table,
+          action: XStateActions.RESTART,
+        });
+      }, 4000);
+    }
   }
 
   getUserTables(userId: string) {
@@ -197,9 +173,13 @@ export class TableService {
   }
 
   filterPlayerCards(table: Table) {
+    const isShowDown = table.currentRound === HandRound.SHOWDOWN;
     return {
       ...table,
-      players: table.players.map((p) => ({ ...p, hand: [] })),
+      players: table.players.map((p) => ({
+        ...p,
+        hand: isShowDown ? p.hand : [],
+      })),
     };
   }
 

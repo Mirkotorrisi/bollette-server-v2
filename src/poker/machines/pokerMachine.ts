@@ -234,7 +234,10 @@ export const getPokerMachine: any = (
           call: (ctx) => ctx.table.call(),
           startNewHand: (ctx) => ctx.table.startNewHand(),
           setLastPlayerToTalk: (ctx) => ctx.table.setLastPlayerToTalk(),
-          handleShowDown: (ctx) => ctx.table.handleShowDown(),
+          handleShowDown: (ctx) => {
+            ctx.table.handleShowDown();
+            ctx.eventEmitter.emit('startNewHand', { tableId: ctx.table.id });
+          },
           handleWinWithouShowDown: (ctx) =>
             ctx.table.handleWinWithoutShowDown(),
           handleNextPlayer: (ctx) => ctx.table.handleNextPlayer(),
