@@ -67,6 +67,7 @@ export enum XStateActions {
   JOIN_TABLE = 'JOIN_TABLE',
   LEAVE_TABLE = 'LEAVE_TABLE',
   RESTART = 'RESTART',
+  ASK_FOR_CARDS = 'ASK_FOR_CARDS',
 }
 
 export interface TableAndPlayer {

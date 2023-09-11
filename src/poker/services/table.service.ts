@@ -35,7 +35,7 @@ export class TableService {
     });
     this.createTableTimeout(tableId);
 
-    return this.filterPlayerCards(tableMachine?.initialState.context.table);
+    return this.getTable(tableId);
   }
 
   leaveTable(tableId: string, player: Player) {
@@ -44,69 +44,27 @@ export class TableService {
     if (!tableMachine?.initialState.context.table.players.length)
       this.tables.delete(tableId);
 
-    return this.filterPlayerCards(tableMachine?.initialState.context.table);
+    return this.getTable(tableId);
   }
 
   getTable(tableId: string) {
     // Retrieve the table state from memory
-    return this.tables.get(tableId)?.machine.context.table;
+    const table = this.tables.get(tableId)?.machine.context.table;
+    return {
+      ...table,
+      players: table.getPlayers,
+    };
   }
 
-  handleBet(tableId: string, amount: number) {
+  handleAction(tableId: string, action: XStateActions, amount?: number) {
     this.stopTimeout(tableId);
     const tableMachine = this.tables.get(tableId);
     tableMachine?.send({
-      type: XStateActions.BET,
+      type: action,
       amount,
     });
     this.createTableTimeout(tableId);
-
-    return this.filterPlayerCards(tableMachine?.initialState.context.table);
-  }
-
-  handleRaise(tableId: string, amount: number) {
-    this.stopTimeout(tableId);
-    const tableMachine = this.tables.get(tableId);
-    tableMachine?.send({
-      type: XStateActions.RAISE,
-      amount,
-    });
-    this.createTableTimeout(tableId);
-
-    return this.filterPlayerCards(tableMachine?.initialState.context.table);
-  }
-
-  handleFold(tableId: string) {
-    this.stopTimeout(tableId);
-    const tableMachine = this.tables.get(tableId);
-    tableMachine?.send({
-      type: XStateActions.FOLD,
-    });
-    this.createTableTimeout(tableId);
-
-    return this.filterPlayerCards(tableMachine?.initialState.context.table);
-  }
-
-  handleCheck(tableId: string) {
-    this.stopTimeout(tableId);
-    const tableMachine = this.tables.get(tableId);
-    tableMachine?.send({
-      type: XStateActions.CHECK,
-    });
-    this.createTableTimeout(tableId);
-
-    return this.filterPlayerCards(tableMachine?.initialState.context.table);
-  }
-
-  handleCall(tableId: string) {
-    this.stopTimeout(tableId);
-    const tableMachine = this.tables.get(tableId);
-    tableMachine?.send({
-      type: XStateActions.CALL,
-    });
-    this.createTableTimeout(tableId);
-
-    return this.filterPlayerCards(tableMachine?.initialState.context.table);
+    return this.getTable(tableId);
   }
 
   @OnEvent('checkIfAllIn')
@@ -136,13 +94,19 @@ export class TableService {
           type: XStateActions.RESTART,
         });
         this.subject.next({
-          table: this.filterPlayerCards(
-            tableMachine?.initialState.context.table,
-          ) as Table,
+          table: tableMachine?.initialState.context.table,
           action: XStateActions.RESTART,
         });
       }, 4000);
     }
+  }
+  @OnEvent('askForCards')
+  askForCards(payload: { tableId: string }) {
+    const tableMachine = this.tables.get(payload.tableId);
+    this.subject.next({
+      table: tableMachine?.initialState.context.table as Table,
+      action: XStateActions.RESTART,
+    });
   }
 
   getUserTables(userId: string) {
@@ -150,7 +114,7 @@ export class TableService {
       .filter(([_, m]: [string, PokerMachine]) =>
         m.machine.context.table.players.some((p) => p.id === userId),
       )
-      .map(([id, m]) => [id, this.filterPlayerCards(m.machine.context.table)]);
+      .map(([id, m]) => [id, this.getTable(id)]);
   }
 
   createTableTimeout(tableId: string) {
@@ -162,25 +126,13 @@ export class TableService {
         type: 'FOLD',
       });
       this.subject.next({
-        table: this.filterPlayerCards(
-          tableMachine?.initialState.context.table,
-        ) as Table,
+        table: tableMachine?.initialState.context.table,
+
         action: XStateActions.FOLD,
       });
       this.createTableTimeout(tableId);
     }, TIME_BANK);
     this.intervals[tableId] = interval;
-  }
-
-  filterPlayerCards(table: Table) {
-    const isShowDown = table.currentRound === HandRound.SHOWDOWN;
-    return {
-      ...table,
-      players: table.players.map((p) => ({
-        ...p,
-        hand: isShowDown ? p.hand : [],
-      })),
-    };
   }
 
   stopTimeout(tableId: string) {

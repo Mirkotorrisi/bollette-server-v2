@@ -8,7 +8,7 @@ export class Table {
   dealerPosition = 0;
   currentRound = HandRound.PRE_FLOP;
   id: string;
-  players: Player[] = [];
+  private players: Player[] = [];
   pot = 0;
   highestBet: number;
   smallBlind = 1;
@@ -78,6 +78,16 @@ export class Table {
     const bool = !!this.players.length;
     console.log('hasLeastOnePlayer', bool);
     return bool;
+  }
+
+  get getPlayers(): Player[] {
+    return this.players.map(
+      (p) =>
+        ({
+          ...p,
+          hand: this.currentRound === HandRound.SHOWDOWN ? p.hand : [],
+        } as Player),
+    );
   }
 
   addPlayer(player: Player): boolean {

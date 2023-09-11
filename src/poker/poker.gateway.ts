@@ -68,7 +68,6 @@ export class PokerGateway
   afterInit(server): void {
     this.tableSubscription = this.tableService.tableSubject$.subscribe({
       next: ({ table, action }) => {
-        server.to(table.id).emit(Actions.ASK_FOR_CARDS, table.id);
         switch (action) {
           case XStateActions.FOLD:
             this.logger.log(`Forced fold due to timeout ${table.id}.`);
@@ -77,6 +76,9 @@ export class PokerGateway
           case XStateActions.RESTART:
             this.logger.log(`Starting a new hand on ${table.id}.`);
             server.to(table.id).emit(Actions.CHECK, table);
+          case XStateActions.ASK_FOR_CARDS:
+            this.logger.log(`Sending player cards ${table.id}.`);
+            server.to(table.id).emit(Actions.ASK_FOR_CARDS);
           default:
             break;
         }
@@ -126,7 +128,6 @@ export class PokerGateway
     const table = this.tableService.leaveTable(tableId, player);
     this.server.emit(Actions.ALL_TABLES, this.tableService.allTables);
     this.server.to(tableId).emit(Actions.LEAVE, table, playerId);
-    this.getPlayerCards(client, tableId);
     client.emit(
       Actions.ALL_USER_TABLES,
       this.tableService.getUserTables(player.id),
@@ -146,41 +147,44 @@ export class PokerGateway
   @UseGuards(TableAmountGuard)
   handleBet(client: Socket, { tableId, amount }: TableAndAmount) {
     this.logger.log(`Player bets ${amount} on table ${tableId}.`);
-    const table = this.tableService.handleBet(tableId, amount);
+    const table = this.tableService.handleAction(
+      tableId,
+      XStateActions.BET,
+      amount,
+    );
     this.server.to(tableId).emit(Actions.BET, table);
-    this.getPlayerCards(client, tableId);
   }
 
   @SubscribeMessage(Actions.RAISE)
   @UseGuards(TableAmountGuard)
   handleRaise(client: Socket, { tableId, amount }: TableAndAmount) {
     this.logger.log(`Player raise ${amount} on table ${tableId}.`);
-    const table = this.tableService.handleRaise(tableId, amount);
+    const table = this.tableService.handleAction(
+      tableId,
+      XStateActions.RAISE,
+      amount,
+    );
     this.server.to(tableId).emit(Actions.RAISE, table);
-    this.getPlayerCards(client, tableId);
   }
 
   @SubscribeMessage(Actions.CHECK)
   handleCheck(client: Socket, tableId: string) {
     this.logger.log(`Player check on table ${tableId}.`);
-    const table = this.tableService.handleCheck(tableId);
+    const table = this.tableService.handleAction(tableId, XStateActions.CHECK);
     this.server.to(tableId).emit(Actions.CHECK, table);
-    this.getPlayerCards(client, tableId);
   }
 
   @SubscribeMessage(Actions.FOLD)
   handleFold(client: Socket, tableId: string) {
     this.logger.log(`Player fold on table ${tableId}.`);
-    const table = this.tableService.handleFold(tableId);
+    const table = this.tableService.handleAction(tableId, XStateActions.FOLD);
     this.server.to(tableId).emit(Actions.FOLD, table);
-    this.getPlayerCards(client, tableId);
   }
 
   @SubscribeMessage(Actions.CALL)
   handleCall(client: Socket, tableId: string) {
     this.logger.log(`Player call on table ${tableId}.`);
-    const table = this.tableService.handleCall(tableId);
+    const table = this.tableService.handleAction(tableId, XStateActions.CALL);
     this.server.to(tableId).emit(Actions.CALL, table);
-    this.getPlayerCards(client, tableId);
   }
 }
