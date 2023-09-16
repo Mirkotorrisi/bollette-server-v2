@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Table } from '../models/table.model';
 import { getPokerMachine } from '../machines/pokerMachine';
 import { Subject } from 'rxjs';
-import { HandRound, XStateActions } from '../utils/types';
+import { Events, XStateActions } from '../utils/types';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 
 type PokerMachine = ReturnType<typeof getPokerMachine>;
@@ -67,7 +67,7 @@ export class TableService {
     return this.getTable(tableId);
   }
 
-  @OnEvent('checkIfAllIn')
+  @OnEvent(Events.CHECK_IF_ALL_IN)
   checkIfAllIn(payload: { tableId: string }) {
     const tableMachine = this.tables.get(payload.tableId);
     const player = tableMachine?.initialState.context.table.currentPlayer;
@@ -85,7 +85,7 @@ export class TableService {
     }
   }
 
-  @OnEvent('startNewHand')
+  @OnEvent(Events.START_NEW_HAND)
   startNewHandTimeout(payload: { tableId: string }) {
     const tableMachine = this.tables.get(payload.tableId);
     if (tableMachine?.initialState.context.table.hasMoreThanOnePlayer) {
@@ -100,12 +100,13 @@ export class TableService {
       }, 4000);
     }
   }
-  @OnEvent('askForCards')
+
+  @OnEvent(Events.ASK_FOR_CARDS)
   askForCards(payload: { tableId: string }) {
     const tableMachine = this.tables.get(payload.tableId);
     this.subject.next({
       table: tableMachine?.initialState.context.table as Table,
-      action: XStateActions.RESTART,
+      action: XStateActions.ASK_FOR_CARDS,
     });
   }
 
@@ -127,7 +128,6 @@ export class TableService {
       });
       this.subject.next({
         table: tableMachine?.initialState.context.table,
-
         action: XStateActions.FOLD,
       });
       this.createTableTimeout(tableId);
@@ -137,6 +137,15 @@ export class TableService {
 
   stopTimeout(tableId: string) {
     clearTimeout(this.intervals[tableId]);
+  }
+
+  getPlayerCards(tableId: string, playerName: string) {
+    const tableMachine = this.tables.get(tableId);
+
+    const player = tableMachine?.initialState.context.table.players.find(
+      (p) => p.name === playerName,
+    );
+    return player?.hand;
   }
 
   get tableSubject$() {

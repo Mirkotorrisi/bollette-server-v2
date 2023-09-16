@@ -70,6 +70,12 @@ export enum XStateActions {
   ASK_FOR_CARDS = 'ASK_FOR_CARDS',
 }
 
+export enum Events {
+  ASK_FOR_CARDS = 'askForCards',
+  START_NEW_HAND = 'startNewHand',
+  CHECK_IF_ALL_IN = 'checkIfAllIn',
+}
+
 export interface TableAndPlayer {
   tableId: string;
   playerId: string;

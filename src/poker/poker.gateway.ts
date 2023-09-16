@@ -137,10 +137,9 @@ export class PokerGateway
 
   @SubscribeMessage(Actions.GET_PLAYER_CARDS)
   getPlayerCards(client: Socket, tableId: string) {
-    const table = this.tableService.getTable(tableId);
     const playerName = client.handshake.auth.name;
-    const player = table.players.find((p) => p.name === playerName);
-    client.emit(Actions.GET_PLAYER_CARDS, { tableId, hand: player.hand });
+    const hand = this.tableService.getPlayerCards(tableId, playerName);
+    client.emit(Actions.GET_PLAYER_CARDS, { tableId, hand });
   }
 
   @SubscribeMessage(Actions.BET)

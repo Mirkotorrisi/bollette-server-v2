@@ -1,6 +1,7 @@
 import { createMachine, interpret } from 'xstate';
 import { Table } from '../models/table.model';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Events } from '../utils/types';
 
 export interface Ctx {
   table: Table;
@@ -236,12 +237,18 @@ export const getPokerMachine: any = (
           setLastPlayerToTalk: (ctx) => ctx.table.setLastPlayerToTalk(),
           handleShowDown: (ctx) => {
             ctx.table.handleShowDown();
-            ctx.eventEmitter.emit('startNewHand', { tableId: ctx.table.id });
-            ctx.eventEmitter.emit('askForCards', { tableId: ctx.table.id });
+            ctx.eventEmitter.emit(Events.START_NEW_HAND, {
+              tableId: ctx.table.id,
+            });
+            ctx.eventEmitter.emit(Events.ASK_FOR_CARDS, {
+              tableId: ctx.table.id,
+            });
           },
           handleWinWithouShowDown: (ctx) => {
             ctx.table.handleWinWithoutShowDown();
-            ctx.eventEmitter.emit('askForCards', { tableId: ctx.table.id });
+            ctx.eventEmitter.emit(Events.ASK_FOR_CARDS, {
+              tableId: ctx.table.id,
+            });
           },
           handleNextPlayer: (ctx) => ctx.table.handleNextPlayer(),
           handlePreflop: (ctx) => ctx.table.handlePreFlop(),
@@ -250,7 +257,9 @@ export const getPokerMachine: any = (
           handleRiver: (ctx) => ctx.table.handleRiver(),
           handleNextDealer: (ctx) => ctx.table.handleNextDealer(),
           checkIfAllIn: (ctx) =>
-            ctx.eventEmitter.emit('checkIfAllIn', { tableId: ctx.table.id }),
+            ctx.eventEmitter.emit(Events.CHECK_IF_ALL_IN, {
+              tableId: ctx.table.id,
+            }),
         },
       },
     ),
