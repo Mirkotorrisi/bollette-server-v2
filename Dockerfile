@@ -3,9 +3,13 @@ FROM node:16-alpine as development
 
 WORKDIR /app
 
+RUN echo "Going to deploy DEVELOPMENT"
+
 # Copy configuration files
 COPY tsconfig*.json ./
 COPY package*.json ./
+
+RUN echo "Should install nest globally DEVELOPMENT"
 
 RUN npm install -g @nestjs/cli
 
@@ -24,8 +28,15 @@ FROM node:16-alpine as production
 
 WORKDIR /app
 
+RUN echo "Going to deploy PROD"
+
+
 # Copy dependencies files
 COPY package*.json ./
+
+RUN echo "Should install nest globally PROD"
+
+RUN npm install -g @nestjs/cli
 
 # Install runtime dependecies (without dev/test dependecies)
 RUN npm ci --omit=dev
