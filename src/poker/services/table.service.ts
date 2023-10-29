@@ -141,7 +141,6 @@ export class TableService {
 
   getPlayerCards(tableId: string, playerName: string) {
     const tableMachine = this.tables.get(tableId);
-
     const player = tableMachine?.initialState.context.table.players.find(
       (p) => p.name === playerName,
     );
