@@ -7,6 +7,8 @@ WORKDIR /app
 COPY tsconfig*.json ./
 COPY package*.json ./
 
+RUN npm install -g @nestjs/cli
+
 # Install dependencies from package-lock.json, see https://docs.npmjs.com/cli/v7/commands/npm-ci
 RUN npm ci
 
@@ -32,7 +34,7 @@ RUN npm ci --omit=dev
 COPY --from=development /app/dist/ ./dist/
 
 # Expose application port
-EXPOSE 3000
+EXPOSE 8080
 
 # Start application
 CMD [ "node", "dist/main.js" ]

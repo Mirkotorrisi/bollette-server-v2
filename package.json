@@ -21,9 +21,9 @@
   },
   "dependencies": {
     "@nestjs/axios": "^1.0.1",
-    "@nestjs/common": "^9.0.0",
+    "@nestjs/common": "^9.4.3",
     "@nestjs/config": "^2.2.0",
-    "@nestjs/core": "^9.0.0",
+    "@nestjs/core": "^9.4.3",
     "@nestjs/event-emitter": "^2.0.2",
     "@nestjs/platform-express": "^9.0.0",
     "@nestjs/platform-socket.io": "^9.3.12",
