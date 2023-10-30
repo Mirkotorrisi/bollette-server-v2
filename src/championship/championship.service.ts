@@ -48,13 +48,14 @@ export class ChampionshipService {
       ({ home_team, away_team, bookmakers, commence_time, id }) => {
         const bookmaker = bookmakers?.find((b) => b.markets.length > 1);
         const h2h = bookmaker?.markets?.find((mkt) => mkt.key === 'h2h');
+
         const totals = bookmaker?.markets?.find((mkt) => mkt.key === 'totals');
 
-        const home = h2h?.outcomes[0]?.price;
-        const away = h2h?.outcomes[1]?.price;
-        const draw = h2h?.outcomes[2]?.price;
-        const over = totals?.outcomes[0]?.price;
-        const under = totals?.outcomes[1]?.price;
+        const home = h2h?.outcomes.find((o) => o.name === home_team)?.price;
+        const away = h2h?.outcomes.find((o) => o.name === away_team)?.price;
+        const draw = h2h?.outcomes.find((o) => o.name === 'Draw')?.price;
+        const over = totals?.outcomes.find((o) => o.name === 'Over')?.price;
+        const under = totals?.outcomes.find((o) => o.name === 'Under')?.price;
         const matchId = `${getTeamPrefix(home_team)}-${getTeamPrefix(
           away_team,
         )}${commence_time?.split('T')?.[0]}`;
