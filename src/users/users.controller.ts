@@ -69,8 +69,8 @@ export class UsersController {
   @ApiOperation({
     summary: 'Needs auth, returns user balance',
   })
-  async getAccountSum(@Request() req: any) {
-    return await this.usersService.getAccountSum(req.user?.id);
+  async getUserInfo(@Request() req: any) {
+    return await this.usersService.getUserInfo(req.user?.id);
   }
 
   @UseInterceptors(AuthInterceptor)

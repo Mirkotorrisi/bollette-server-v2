@@ -31,11 +31,12 @@ export class UsersService {
     return this.usersRepository.findOneBy([{ email }, { username }]);
   }
 
-  async getAccountSum(userId: string): Promise<number> {
+  async getUserInfo(userId: string): Promise<Omit<User, 'password'>> {
     this.logger.log('Get account sum');
     const user = await this.usersRepository.findOneBy({ id: +userId });
     if (!user) throw new BadRequestException('Invalid id');
-    return user.account_sum;
+    delete user.password;
+    return user;
   }
 
   async getUserTickets(userId: string): Promise<Ticket[]> {
@@ -76,16 +77,16 @@ export class UsersService {
 
   async decrementUserBalance(userId: string, betImport: number) {
     this.logger.log(`Bet charged to ${userId}import ${betImport}`);
-    const accountSum = await this.getAccountSum(userId);
-    if (accountSum < betImport)
+    const { account_sum } = await this.getUserInfo(userId);
+    if (account_sum < betImport)
       throw new HttpException(
-        `Your balance is not enough to place this bet (${accountSum}$)`,
+        `Your balance is not enough to place this bet (${account_sum}$)`,
         402,
       );
     await this.usersRepository.query(
       `UPDATE users SET account_sum = account_sum - ${betImport} WHERE (id = ${userId})`,
     );
-    return accountSum - betImport;
+    return account_sum - betImport;
   }
 
   async incrementUserBalance(userId: string, winImport: number) {
