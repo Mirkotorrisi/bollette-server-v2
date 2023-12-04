@@ -62,7 +62,7 @@ export class UsersController {
   }
 
   @UseInterceptors(AuthInterceptor)
-  @Get('/account_sum')
+  @Get('/info')
   @ApiHeader({
     name: 'x-auth-token',
   })
