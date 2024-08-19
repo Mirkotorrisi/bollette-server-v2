@@ -3,6 +3,8 @@ FROM node:16-alpine as development
 
 WORKDIR /app
 
+COPY .env .env
+
 RUN echo "Going to deploy DEVELOPMENT"
 
 # Copy configuration files
@@ -17,7 +19,7 @@ RUN npm install -g @nestjs/cli
 RUN npm ci
 
 # Copy application sources (.ts, .tsx, js)
-COPY src/ src/
+COPY . .
 
 # Build application (produces dist/ folder)
 RUN npm run build
@@ -30,7 +32,7 @@ WORKDIR /app
 
 RUN echo "Going to deploy PROD"
 
-
+COPY --from=development /app/.env .env
 # Copy dependencies files
 COPY package*.json ./
 

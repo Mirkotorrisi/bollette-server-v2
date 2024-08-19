@@ -5,7 +5,11 @@ import {
   SwaggerCustomOptions,
   SwaggerModule,
 } from '@nestjs/swagger';
+import * as dotenv from 'dotenv';
+import { join } from 'path';
 import { AppModule } from './app.module';
+
+dotenv.config({ path: join(__dirname, '../.env') });
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
