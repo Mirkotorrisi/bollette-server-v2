@@ -29,9 +29,10 @@ const retry_strategy = function (options) {
       provide: 'REDIS',
       useFactory: async (): Promise<any> => {
         const client = createClient({
-          url: process.env.REDIS_URI,
           socket: {
             connectTimeout: 60000,
+            host: process.env.REDIS_URI,
+            port: 13708,
           },
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore

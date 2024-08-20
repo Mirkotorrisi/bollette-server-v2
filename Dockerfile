@@ -3,8 +3,6 @@ FROM node:16-alpine as development
 
 WORKDIR /app
 
-COPY .env .env
-
 RUN echo "Going to deploy DEVELOPMENT"
 
 # Copy configuration files
@@ -32,7 +30,6 @@ WORKDIR /app
 
 RUN echo "Going to deploy PROD"
 
-COPY --from=development /app/.env .env
 # Copy dependencies files
 COPY package*.json ./
 
