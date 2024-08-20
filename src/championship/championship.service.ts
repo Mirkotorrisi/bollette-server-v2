@@ -1,3 +1,4 @@
+import { HttpService } from '@nestjs/axios';
 import {
   BadRequestException,
   Inject,
@@ -5,9 +6,8 @@ import {
   Logger,
 } from '@nestjs/common';
 import { RedisClientType } from '@redis/client';
-import { HttpService } from '@nestjs/axios';
-import { sport_keys, THE_ODDS_API_URL, getTeamPrefix } from './utils';
 import { catchError, firstValueFrom } from 'rxjs';
+import { getTeamPrefix, sport_keys, THE_ODDS_API_URL } from './utils';
 
 @Injectable()
 export class ChampionshipService {

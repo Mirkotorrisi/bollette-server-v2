@@ -34,6 +34,7 @@ const retry_strategy = function (options) {
             host: process.env.REDIS_URI,
             port: 13708,
           },
+          password: process.env.REDIS_PASSWORD,
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
           retry_strategy,
