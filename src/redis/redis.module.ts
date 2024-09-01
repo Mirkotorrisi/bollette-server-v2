@@ -2,13 +2,16 @@ import { Module } from '@nestjs/common';
 import { createClient } from '@redis/client';
 
 const retry_strategy = function (options) {
+  console.log('this is the retry strategy');
   if (
     options.error &&
     (options.error.code === 'ECONNREFUSED' ||
       options.error.code === 'NR_CLOSED')
   ) {
     // Try reconnecting after 5 seconds
-    console.error('The server refused the connection. Retrying connection...');
+    console.error(
+      'Redis-The server refused the connection. Retrying connection...',
+    );
     return 5000;
   }
   if (options.total_retry_time > 1000 * 60 * 60) {
@@ -28,7 +31,7 @@ const retry_strategy = function (options) {
     {
       provide: 'REDIS',
       useFactory: async (): Promise<any> => {
-        console.log(process.env.REDIS_PASSWORD);
+        console.log('this is theeeeeee->', process.env.REDIS_PASSWORD);
         const client = createClient({
           socket: {
             connectTimeout: 60000,
