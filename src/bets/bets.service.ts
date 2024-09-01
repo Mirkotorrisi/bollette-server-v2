@@ -97,7 +97,7 @@ export class BetsService {
         result,
         odd.toString(),
         ticket_id,
-        start.replace('T', ' '),
+        start.replace('T', ' ').replace('Z', ''),
         matchId,
       ],
     );

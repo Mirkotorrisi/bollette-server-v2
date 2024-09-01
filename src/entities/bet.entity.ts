@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryColumn } from 'typeorm';
+import { Column, Entity, PrimaryColumn } from 'typeorm';
 
 @Entity('bet')
 export class Bet {
@@ -22,6 +22,13 @@ export class Bet {
 
   @Column()
   matchId: string;
+
+  @Column({
+    type: 'enum',
+    enum: ['ongoing', 'won', 'lost'],
+    default: 'ongoing',
+  })
+  status: 'ongoing' | 'won' | 'lost';
 
   @PrimaryColumn()
   bet_id: number;

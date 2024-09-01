@@ -31,7 +31,6 @@ const retry_strategy = function (options) {
     {
       provide: 'REDIS',
       useFactory: async (): Promise<any> => {
-        console.log('this is theeeeeee->', process.env.REDIS_PASSWORD);
         const client = createClient({
           socket: {
             connectTimeout: 60000,

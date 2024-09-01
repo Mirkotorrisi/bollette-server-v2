@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('bolletta')
 export class Ticket {
@@ -11,8 +11,12 @@ export class Ticket {
   @Column()
   max_win: number;
 
-  @Column()
-  status: string;
+  @Column({
+    type: 'enum',
+    enum: ['ongoing', 'won', 'lost'],
+    default: 'ongoing',
+  })
+  status: 'ongoing' | 'won' | 'lost';
 
   @Column()
   user_id: number;
