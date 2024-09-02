@@ -16,7 +16,7 @@ export const mkts = ['h2h', 'totals'];
 
 export const THE_ODDS_API_URL = 'https://api.the-odds-api.com/v4/sports/';
 export const RESULTS_API_URL =
-  'https://bollette-server-55622294482.europe-west1.run.app';
+  'https://soccer-results-scraper-55622294482.europe-west1.run.app';
 
 export const formatTeamName = (name: string) => {
   [
