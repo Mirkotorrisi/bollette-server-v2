@@ -35,7 +35,7 @@ const retry_strategy = function (options) {
           socket: {
             connectTimeout: 60000,
             host: process.env.REDIS_URI,
-            port: 13708,
+            port: +process.env.REDIS_PORT,
           },
           password: process.env.REDIS_PASSWORD,
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
