@@ -12,6 +12,7 @@ import { AppModule } from './app.module';
 dotenv.config({ path: join(__dirname, '../.env') });
 
 async function bootstrap() {
+  console.log(`Bollette Server v2.1`);
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe());
   app.enableCors();
