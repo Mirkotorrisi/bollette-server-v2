@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { createClient } from '@redis/client';
 
-const retry_strategy = function (options) {
+const reconnectStrategy = (options) => {
   console.log('this is the retry strategy');
   if (
     options.error &&
@@ -33,14 +33,12 @@ const retry_strategy = function (options) {
       useFactory: async (): Promise<any> => {
         const client = createClient({
           socket: {
+            reconnectStrategy,
             connectTimeout: 60000,
             host: process.env.REDIS_URI,
             port: +process.env.REDIS_PORT,
           },
           password: process.env.REDIS_PASSWORD,
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          retry_strategy,
         });
 
         await client.connect();
