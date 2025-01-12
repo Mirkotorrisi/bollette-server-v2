@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { RedisClientType } from '@redis/client';
 import { catchError, firstValueFrom } from 'rxjs';
-import { TicketMatch } from 'src/bets/types';
 import { getTeamPrefix, sport_keys, THE_ODDS_API_URL } from './utils';
 
 @Injectable()
@@ -19,10 +18,7 @@ export class ChampionshipService {
     @Inject('REDIS') private redis: RedisClientType,
   ) {}
 
-  async getMatches(
-    sport: string,
-    avoidCache?: boolean,
-  ): Promise<TicketMatch[]> {
+  async getMatches(sport: string, avoidCache?: boolean) {
     this.logger.log('Get Matches');
     const cached = await this.redis.get(sport);
 
