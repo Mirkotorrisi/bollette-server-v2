@@ -87,14 +87,7 @@ export class ChampionshipService {
     const tournaments = [];
     for (const sport in sport_keys) {
       const matches = await this.getMatches(sport);
-      tournaments.push(
-        matches.map(({ matchId, teams, start }) => ({
-          matchId,
-          teams,
-          start,
-          sport,
-        })),
-      );
+      tournaments.push(matches);
     }
 
     return tournaments;

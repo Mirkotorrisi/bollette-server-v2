@@ -13,8 +13,8 @@ export class ChampionshipController {
     summary: 'Returns match list, given a championship',
   })
   @ApiParam({ name: 'championship', enum: ChampionshipEnum })
-  async getAllMatches(@Param('championship') championship: ChampionshipEnum) {
-    return await this.championshipService.getMatches(championship);
+  async getAllMatches() {
+    return await this.championshipService.getAllMatches();
   }
 
   @Get('/:championship')
