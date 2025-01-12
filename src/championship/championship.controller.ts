@@ -8,6 +8,15 @@ import { ChampionshipEnum } from './dto/GetMatches.dto';
 export class ChampionshipController {
   constructor(private championshipService: ChampionshipService) {}
 
+  @Get('/all')
+  @ApiOperation({
+    summary: 'Returns match list, given a championship',
+  })
+  @ApiParam({ name: 'championship', enum: ChampionshipEnum })
+  async getAllMatches(@Param('championship') championship: ChampionshipEnum) {
+    return await this.championshipService.getMatches(championship);
+  }
+
   @Get('/:championship')
   @ApiOperation({
     summary: 'Returns match list, given a championship',

@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { RedisClientType } from '@redis/client';
 import { catchError, firstValueFrom } from 'rxjs';
+import { TicketMatch } from 'src/bets/types';
 import { getTeamPrefix, sport_keys, THE_ODDS_API_URL } from './utils';
 
 @Injectable()
@@ -18,7 +19,10 @@ export class ChampionshipService {
     @Inject('REDIS') private redis: RedisClientType,
   ) {}
 
-  async getMatches(sport: string, avoidCache?: boolean) {
+  async getMatches(
+    sport: string,
+    avoidCache?: boolean,
+  ): Promise<TicketMatch[]> {
     this.logger.log('Get Matches');
     const cached = await this.redis.get(sport);
 
@@ -80,5 +84,23 @@ export class ChampionshipService {
     });
     this.redis.set('bet_list_eternal', JSON.stringify(availableBetList));
     return availableBetList;
+  }
+
+  async getAllMatches() {
+    this.logger.log('Get All Matches');
+    const tournaments = [];
+    for (const sport in sport_keys) {
+      const matches = await this.getMatches(sport);
+      tournaments.push(
+        matches.map(({ matchId, teams, start }) => ({
+          matchId,
+          teams,
+          start,
+          sport,
+        })),
+      );
+    }
+
+    return tournaments;
   }
 }
