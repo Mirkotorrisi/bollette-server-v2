@@ -87,9 +87,11 @@ export class ChampionshipService {
     const tournaments = [];
     for (const sport in sport_keys) {
       const matches = await this.getMatches(sport);
-      tournaments.push(matches);
+      tournaments.push(...matches);
     }
 
-    return tournaments;
+    return tournaments.sort((a, b) => {
+      return new Date(a.start).getTime() - new Date(b.start).getTime();
+    });
   }
 }
