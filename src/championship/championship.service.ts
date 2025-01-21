@@ -83,7 +83,7 @@ export class ChampionshipService {
   }
 
   async getAllMatches() {
-    this.logger.log('Get All Matches');
+    this.logger.log('Get All Matches!!!!');
     const tournaments = [];
     for (const sport in sport_keys) {
       const matches = await this.getMatches(sport);
