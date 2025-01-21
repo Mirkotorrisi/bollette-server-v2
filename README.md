@@ -16,7 +16,9 @@ To bring match results and update won/lost tickets and pay users for their wins,
 
 ## ROUTES
 
-- **GET /championships/:championship/:market/** route takes two parameters: championship and market, because it provides 2 different types of odds (h2h - who wins the game, totals - number of goals).
+- **GET /championships/:championship/** route takes one parameters: championship, it provides all the odds for that championship
+
+- **GET /championships/all/** route takes no parameters: it returns an array with all the matches of all the championships sorted by start date.
 
 After desired odds are cached, user can place some bets on them throught the /bets route.
 
