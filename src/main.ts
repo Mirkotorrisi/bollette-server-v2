@@ -33,7 +33,7 @@ async function bootstrap() {
       persistAuthorization: true,
     },
   };
-  SwaggerModule.setup('documentation', app, document, customOptions);
+  SwaggerModule.setup('api/swagger', app, document, customOptions);
 
   await app.listen(process.env.PORT);
   console.log(`Nest is running on port ${process.env.PORT}`);
