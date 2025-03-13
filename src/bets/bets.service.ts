@@ -1,12 +1,7 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  Logger,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { RedisClientType } from '@redis/client';
 import { ChampionshipService } from 'src/championship/championship.service';
+import { ChampionshipEnum } from 'src/championship/dto/GetMatches.dto';
 import { Bet } from 'src/entities/bet.entity';
 import { Ticket } from 'src/entities/ticket.entity';
 import { UsersService } from 'src/users/users.service';
@@ -15,7 +10,6 @@ import { BetDto, SubmitCheckoutDto } from './dto/SubmitCheckout.dto';
 
 @Injectable()
 export class BetsService {
-  private readonly logger = new Logger('Bet Service');
   constructor(
     @InjectRepository(Bet)
     private betRepository: Repository<Bet>,
@@ -23,7 +17,6 @@ export class BetsService {
     private ticketRepository: Repository<Ticket>,
     private userService: UsersService,
     private championshipService: ChampionshipService,
-    @Inject('REDIS') private redis: RedisClientType,
   ) {}
 
   getMultiplier = (ticket: BetDto[]) => {
@@ -45,7 +38,7 @@ export class BetsService {
     );
     const list = await Promise.all(
       championships.map(
-        async (sport_key) =>
+        async (sport_key: ChampionshipEnum) =>
           await this.championshipService.getMatches(sport_key, true),
       ),
     );
