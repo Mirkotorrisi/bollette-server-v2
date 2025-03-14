@@ -26,9 +26,9 @@ export class ChampionshipService {
     @Inject('REDIS') private redis: RedisClientType,
   ) {}
 
-  onModuleInit() {
-    this.getBetflagMatches();
-  }
+  // onModuleInit() {
+  //   this.getBetflagMatches();
+  // }
 
   async getMatches(sport: ChampionshipEnum, avoidCache?: boolean) {
     this.logger.log('Get Matches');
