@@ -1,22 +1,24 @@
-import { BetflagMarkets } from './types';
+import { BetflagMarkets, SportGameOddsOdd } from './types';
 
 export const sport_keys = {
-  premier_league: 'soccer_epl',
-  serie_a: 'soccer_italy_serie_a',
+  premier_league: 'EPL',
+  serie_a: 'IT_SERIE_A',
   serie_b: 'soccer_italy_serie_b',
-  ligamax: 'soccer_mexico_ligamx',
-  bundesliga: 'soccer_germany_bundesliga',
+  ligamax: 'LIGA_MX',
+  bundesliga: 'BUNDESLIGA',
   eredivisie: 'soccer_netherlands_eredivisie',
   primeira_liga: 'soccer_portugal_primeira_liga',
-  la_liga: 'soccer_spain_la_liga',
-  ligue_one: 'soccer_france_ligue_one',
-  champions_league: 'soccer_uefa_champs_league',
-  europa_league: 'soccer_uefa_europa_league',
+  la_liga: 'LA_LIGA',
+  ligue_one: 'FR_LIGUE_1',
+  champions_league: 'UEFA_CHAMPIONS_LEAGUE',
+  europa_league: 'UEFA_EUROPA_LEAGUE',
 } as const;
 
 export const mkts = ['h2h', 'totals'];
 
 export const THE_ODDS_API_URL = 'https://api.the-odds-api.com/v4/sports/';
+export const SPORTS_GAME_ODDS_API_URL = 'https://api.sportsgameodds.com/v2';
+
 export const RESULTS_API_URL =
   'https://soccer-results-scraper-55622294482.europe-west1.run.app';
 
@@ -37,6 +39,7 @@ export const formatTeamName = (name: string) => {
     'SAD',
     'CP',
     'Lisbon',
+    ' ',
     /[0-9]/g,
   ].map((toDel) => (name = name?.replace(toDel, '')));
   return name?.trim();
@@ -122,3 +125,35 @@ export const parseMarket = (
   key: BetflagMarkets,
   spread: string,
 ) => markets[key].spd[spread].asl.map((sign) => sign.ov);
+
+export const getDateAfter = () => new Date().toISOString().split('T')[0];
+export const getDateBefore = () =>
+  new Date(new Date().setDate(new Date().getDate() + 14))
+    .toISOString()
+    .split('T')[0];
+
+export const outcomeKeys = {
+  'points-away-reg-ml3way-away': 'away',
+  'points-home-reg-ml3way-home': 'home',
+  'points-all-reg-ml3way-draw': 'draw',
+  'points-all-game-ou-under': 'under',
+  'points-all-game-ou-over': 'over',
+  'bothTeamsScored-all-game-yn-yes': 'gg',
+  'bothTeamsScored-all-game-yn-no': 'ng',
+} as const;
+
+export const parseOdds = (odds: Record<string, SportGameOddsOdd>) => {
+  const parsed: Record<string, number> = {};
+  for (const key in outcomeKeys) {
+    const odd = odds[key];
+    if (!odd) continue;
+    const value = getEuropeanOdd(Number(odd?.bookOdds));
+    parsed[outcomeKeys[key]] = value;
+  }
+  return parsed;
+};
+
+export const getEuropeanOdd = (odd: number) => {
+  if (odd > 0) return parseFloat((odd / 100 + 1).toFixed(2));
+  return parseFloat((1 + 100 / Math.abs(odd)).toFixed(2));
+};

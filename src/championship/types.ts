@@ -24,3 +24,24 @@ export enum BetflagMarkets {
   BothTeamsToScore = '1350;7566;10656;0;0',
   DrawNoBet = '1350;7566;10658;0;0',
 }
+
+export type SportGameOddsOdd = {
+  oddID: string;
+  opposingOddID: string;
+  marketName: string;
+  statID: string;
+  statEntityID: string;
+  periodID: string;
+  betTypeID: string;
+  sideID: string;
+  started: boolean;
+  ended: boolean;
+  cancelled: boolean;
+  bookOddsAvailable: boolean;
+  fairOddsAvailable: boolean;
+  fairOdds: string; // Es: "+110"
+  bookOdds: string; // Es: "-104"
+  openFairOdds: string;
+  openBookOdds: string;
+  scoringSupported: boolean;
+};

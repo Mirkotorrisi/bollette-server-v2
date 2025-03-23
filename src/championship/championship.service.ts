@@ -11,10 +11,13 @@ import { ChampionshipEnum } from './dto/GetMatches.dto';
 import {
   BETFLAG_HEADERS,
   BETFLAG_URL,
+  getDateAfter,
+  getDateBefore,
   getTeamPrefix,
   parseBetflagMatches,
+  parseOdds,
   sport_keys,
-  THE_ODDS_API_URL,
+  SPORTS_GAME_ODDS_API_URL,
 } from './utils';
 
 @Injectable()
@@ -26,6 +29,11 @@ export class ChampionshipService {
     @Inject('REDIS') private redis: RedisClientType,
   ) {}
 
+  async onModuleInit() {
+    this.logger.log('Championships Service Initialized');
+    // await this.getMatches(ChampionshipEnum.premier_league);
+  }
+
   async getMatches(sport: ChampionshipEnum, avoidCache?: boolean) {
     this.logger.log('Get Matches');
     const cached = await this.redis.get(sport);
@@ -35,61 +43,49 @@ export class ChampionshipService {
       return JSON.parse(cached);
     }
 
-    let availableBetList;
-    if (sport === 'serie_a') {
-      availableBetList = await this.getBetflagMatches();
-    } else {
-      const res = await firstValueFrom(
-        this.httpService
-          .get(`${THE_ODDS_API_URL + sport_keys[sport]}/odds/`, {
-            params: {
-              apiKey: process.env.THE_ODDS_API_KEY,
-              regions: 'eu',
-              markets: 'h2h,totals',
-            },
-          })
-          .pipe(
-            catchError((err) => {
-              this.logger.error('Something went wrong while fetching odds');
-              throw new BadRequestException(err.response.data);
-            }),
-          ),
-      );
+    const startsAfter = getDateAfter();
+    const startsBefore = getDateBefore();
+    const leagueID = sport_keys[sport];
 
-      availableBetList = res.data.map(
-        ({ home_team, away_team, bookmakers, commence_time, id }) => {
-          const bookmaker = bookmakers?.find((b) => b.markets.length > 1);
-          const h2h = bookmaker?.markets?.find((mkt) => mkt.key === 'h2h');
+    const res = await firstValueFrom(
+      this.httpService
+        .get(`${SPORTS_GAME_ODDS_API_URL}/events`, {
+          params: {
+            leagueID,
+            startsAfter,
+            startsBefore,
+            bookmakerID: 'betfairexchange',
+          },
+          headers: {
+            'x-api-key': process.env.SPORTS_GAME_ODDS_API_KEY,
+            'Accept-Encoding': 'identity',
+          },
+        })
+        .pipe(
+          catchError((err) => {
+            this.logger.error('Something went wrong while fetching odds');
+            throw new BadRequestException(err.response.data);
+          }),
+        ),
+    );
 
-          const totals = bookmaker?.markets?.find(
-            (mkt) => mkt.key === 'totals',
-          );
-
-          const home = h2h?.outcomes.find((o) => o.name === home_team)?.price;
-          const away = h2h?.outcomes.find((o) => o.name === away_team)?.price;
-          const draw = h2h?.outcomes.find((o) => o.name === 'Draw')?.price;
-          const over = totals?.outcomes.find((o) => o.name === 'Over')?.price;
-          const under = totals?.outcomes.find((o) => o.name === 'Under')?.price;
-          const matchId = `${getTeamPrefix(home_team)}-${getTeamPrefix(
-            away_team,
-          )}${commence_time?.split('T')?.[0]}`;
-          return {
-            id,
-            sport_key: sport,
-            matchId,
-            teams: [home_team, away_team],
-            start: commence_time,
-            odds: {
-              home,
-              draw,
-              away,
-              over,
-              under,
-            },
-          };
-        },
-      );
-    }
+    const availableBetList = res.data.data.map(
+      ({ odds, eventID, teams, status }) => {
+        const homeTeamName = teams.home.names.long;
+        const awayTeamName = teams.away.names.long;
+        const matchId = `${getTeamPrefix(homeTeamName)}-${getTeamPrefix(
+          awayTeamName,
+        )}${status.startsAt?.split('T')?.[0]}`;
+        return {
+          id: eventID,
+          sport_key: sport,
+          matchId,
+          teams: [homeTeamName, awayTeamName],
+          start: status.startsAt,
+          odds: parseOdds(odds),
+        };
+      },
+    );
 
     this.redis.set(sport, JSON.stringify(availableBetList), {
       EX: 60,
