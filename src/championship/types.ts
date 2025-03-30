@@ -4,6 +4,8 @@ export enum SIGN {
   DRAW = 'draw',
   OVER = 'over',
   UNDER = 'under',
+  GG = 'gg',
+  NG = 'ng',
 }
 
 export type Odds = {

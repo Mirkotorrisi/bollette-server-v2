@@ -7,4 +7,14 @@ export type TicketMatch = {
   won: boolean;
 };
 
-export type ResultType = 'home' | 'draw' | 'away' | 'under' | 'over';
+export const results = [
+  'home',
+  'draw',
+  'away',
+  'under',
+  'over',
+  'gg',
+  'ng',
+] as const;
+
+export type ResultType = (typeof results)[number];

@@ -1,6 +1,6 @@
-import { ResultType } from './../types';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsIn, IsNotEmpty, IsOptional } from 'class-validator';
+import { results, ResultType } from './../types';
 
 export class PlaceBetDto {
   @IsNotEmpty()
@@ -10,9 +10,9 @@ export class PlaceBetDto {
   })
   matchId: string;
 
-  @IsIn(['home', 'draw', 'away', 'under', 'over'])
+  @IsIn(results)
   @ApiProperty({
-    description: 'Match result sign, can be home, draw, away, under, over',
+    description: `Match result sign, can be ${results.join(', ')}`,
     required: true,
     example: 'draw',
   })

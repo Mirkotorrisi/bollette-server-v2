@@ -10,7 +10,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { ResultType } from '../types';
+import { results, ResultType } from '../types';
 
 export class SubmitCheckoutDto {
   @IsNotEmpty()
@@ -45,9 +45,9 @@ export class BetDto {
   })
   id: string;
 
-  @IsIn(['home', 'draw', 'away', 'under', 'over'])
+  @IsIn(results)
   @ApiProperty({
-    description: 'Match result sign, can be home, draw, away, under, over',
+    description: `Match result sign, can be ${results.join(', ')}`,
     required: true,
     example: 'draw',
   })
