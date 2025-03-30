@@ -98,8 +98,12 @@ export class ChampionshipService {
     this.logger.log('Get All Matches!!!!');
     const tournaments = [];
     for (const sport in sport_keys) {
-      const matches = await this.getMatches(sport as ChampionshipEnum);
-      tournaments.push(...matches);
+      try {
+        const matches = await this.getMatches(sport as ChampionshipEnum);
+        tournaments.push(...matches);
+      } catch (error) {
+        continue;
+      }
     }
 
     return tournaments.sort((a, b) => {
