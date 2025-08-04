@@ -18,6 +18,8 @@ export const mkts = ['h2h', 'totals'];
 
 export const THE_ODDS_API_URL = 'https://api.the-odds-api.com/v4/sports/';
 export const SPORTS_GAME_ODDS_API_URL = 'https://api.sportsgameodds.com/v2';
+export const AI_ODDS_BUILDER_API_URL =
+  'https://ai-odds-builder-55622294482.europe-west1.run.app';
 
 export const RESULTS_API_URL =
   'https://soccer-results-scraper-55622294482.europe-west1.run.app';

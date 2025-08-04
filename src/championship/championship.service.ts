@@ -9,7 +9,7 @@ import { RedisClientType } from '@redis/client';
 import { catchError, firstValueFrom } from 'rxjs';
 import { ChampionshipEnum } from './dto/GetMatches.dto';
 import {
-  BETFLAG_HEADERS,
+  AI_ODDS_BUILDER_API_URL,
   BETFLAG_URL,
   getDateAfter,
   getDateBefore,
@@ -19,6 +19,8 @@ import {
   sport_keys,
   SPORTS_GAME_ODDS_API_URL,
 } from './utils';
+
+import * as puppeteer from 'puppeteer';
 
 @Injectable()
 export class ChampionshipService {
@@ -41,6 +43,21 @@ export class ChampionshipService {
     if (cached && !avoidCache) {
       this.redis.set('bet_list_eternal', cached);
       return JSON.parse(cached);
+    }
+
+    if (sport === ChampionshipEnum.serie_a) {
+      this.logger.log('Fetching Serie A matches using ai odds builder');
+      const res = await firstValueFrom(
+        this.httpService
+          .get<{ events: any[] }>(`${AI_ODDS_BUILDER_API_URL}/api/odds`)
+          .pipe(
+            catchError((err) => {
+              this.logger.error('Something went wrong while fetching odds');
+              throw new BadRequestException(err.response.data);
+            }),
+          ),
+      );
+      return res?.data?.events;
     }
 
     const startsAfter = getDateAfter();
@@ -112,19 +129,34 @@ export class ChampionshipService {
   }
 
   async getBetflagMatches() {
-    const data = await firstValueFrom(
-      this.httpService
-        .get(BETFLAG_URL, {
-          headers: BETFLAG_HEADERS,
-        })
-        .pipe(
-          catchError((err) => {
-            this.logger.error('Something went wrong while fetching odds');
-            throw new BadRequestException(err.response.data);
-          }),
-        ),
-    );
-    const parsed = parseBetflagMatches(data.data.leo);
+    const browser = await puppeteer.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+    const page = await browser.newPage();
+
+    await page.goto(BETFLAG_URL, {
+      waitUntil: 'networkidle2',
+    });
+
+    const rawText = await page.evaluate(() => {
+      const preEl = document.querySelector('pre');
+      return preEl ? preEl.textContent : null;
+    });
+
+    let parsedData;
+    try {
+      parsedData = JSON.parse(rawText);
+      console.log(
+        '🚀 ~ ChampionshipService ~ getBetflagMatches ~ parsedData:',
+        parsedData,
+      );
+    } catch (err) {
+      this.logger.error('Something went wrong while fetching odds');
+      throw new BadRequestException(err);
+    }
+
+    await browser.close();
+    const parsed = parseBetflagMatches(parsedData.data.leo);
     return parsed;
   }
 }
