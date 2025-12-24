@@ -11,6 +11,7 @@ type PokerMachine = ReturnType<typeof getPokerMachine>;
 type SubscriptionPayload = { table: Table; action: XStateActions };
 // const TIME_BANK = 20000;
 const TIME_BANK = 2000000;
+const NEW_HAND_TIMEOUT = 2000;
 @Injectable()
 export class TableService {
   private readonly logger = new Logger(TableService.name);
@@ -105,7 +106,7 @@ export class TableService {
           table: tableMachine.getSnapshot().context.table,
           action: XStateActions.RESTART,
         });
-      }, 4000);
+      }, NEW_HAND_TIMEOUT);
     }
   }
 

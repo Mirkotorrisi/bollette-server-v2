@@ -201,6 +201,7 @@ export const getPokerMachine: any = (
           hasLeastOnePlayer: (ctx) => ctx.table.hasLeastOnePlayer,
           isLastPlayerToTalk: (ctx) => ctx.table.isLastPlayerToTalk,
           isRoundSkippable: (ctx) => {
+            if (ctx.table.isHandOver) return false;
             const players = ctx.table.players;
             const act = players.filter(
               (p) => !p.isFolded && !p.isAllIn && p.chips > 0,

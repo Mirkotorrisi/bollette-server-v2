@@ -299,12 +299,6 @@ export class Table {
     );
   }
 
-  handleWin() {
-    console.log('handleWin');
-    this.currentPlayer.chips += this.pot;
-    this.isHandOver = true;
-  }
-
   bet(amount: number) {
     console.log('bet');
     const amountToBet = Math.min(this.currentPlayer.chips, amount);
