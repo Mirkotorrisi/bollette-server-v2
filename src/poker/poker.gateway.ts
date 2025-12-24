@@ -76,6 +76,7 @@ export class PokerGateway
           case XStateActions.RESTART:
             this.logger.log(`Starting a new hand on ${table.id}.`);
             server.to(table.id).emit(Actions.CHECK, table);
+            break;
           case XStateActions.ASK_FOR_CARDS:
             this.logger.log(`Sending player cards ${table.id}.`);
             server.to(table.id).emit(Actions.ASK_FOR_CARDS);

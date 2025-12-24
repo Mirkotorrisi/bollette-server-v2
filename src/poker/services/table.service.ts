@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Player } from '../models/player.model';
 import { v4 as uuidv4 } from 'uuid';
 import { Table } from '../models/table.model';
@@ -13,6 +13,7 @@ type SubscriptionPayload = { table: Table; action: XStateActions };
 const TIME_BANK = 2000000;
 @Injectable()
 export class TableService {
+  private readonly logger = new Logger(TableService.name);
   constructor(private eventEmitter: EventEmitter2) {}
 
   private tables: Map<string, PokerMachine> = new Map<string, PokerMachine>();
@@ -20,6 +21,7 @@ export class TableService {
   private intervals = {};
 
   createTable() {
+    this.logger.log('Creating a new table');
     const tableId = uuidv4();
     const table = new Table(9, tableId);
     const machine = getPokerMachine(table, this.eventEmitter);
@@ -29,6 +31,13 @@ export class TableService {
 
   joinTable(tableId: string, player: Player) {
     const tableMachine = this.tables.get(tableId);
+    if (
+      tableMachine
+        .getSnapshot()
+        .context.table.players.some((p) => p.id === player.id)
+    ) {
+      return this.getTable(tableId);
+    }
     tableMachine?.send({
       type: 'JOIN_TABLE',
       player: new Player(player.name, player.chips, player.id),
@@ -41,7 +50,7 @@ export class TableService {
   leaveTable(tableId: string, player: Player) {
     const tableMachine = this.tables.get(tableId);
     tableMachine?.send({ type: XStateActions.LEAVE_TABLE, player });
-    if (!tableMachine?.initialState.context.table.players.length)
+    if (!tableMachine.getSnapshot().context.table.players.length)
       this.tables.delete(tableId);
 
     return this.getTable(tableId);
@@ -70,15 +79,14 @@ export class TableService {
   @OnEvent(Events.CHECK_IF_ALL_IN)
   checkIfAllIn(payload: { tableId: string }) {
     const tableMachine = this.tables.get(payload.tableId);
-    const player = tableMachine?.initialState.context.table.currentPlayer;
-    const bool = player?.isAllIn;
-    console.log('checkIfAllIn:', bool, player.name, player.chips);
+    const player = tableMachine.getSnapshot().context.table.currentPlayer;
+    if (!player) return;
+    const bool = player.isAllIn;
+    // this.logger.debug(
+    //   `Checking if player ${player.name} is all-in: ${bool} (${player.chips} chips left)`,
+    // );
     if (bool) {
-      console.log(
-        'AUTOMATIC CHECK',
-        tableMachine?.initialState.context.table.currentPlayer.name,
-      );
-
+      this.logger.log(`Automatic check for all-in player: ${player.name}`);
       tableMachine?.send({
         type: XStateActions.CHECK,
       });
@@ -88,13 +96,13 @@ export class TableService {
   @OnEvent(Events.START_NEW_HAND)
   startNewHandTimeout(payload: { tableId: string }) {
     const tableMachine = this.tables.get(payload.tableId);
-    if (tableMachine?.initialState.context.table.hasMoreThanOnePlayer) {
+    if (tableMachine.getSnapshot().context.table.hasMoreThanOnePlayer) {
       setTimeout(() => {
         tableMachine.send({
           type: XStateActions.RESTART,
         });
         this.subject.next({
-          table: tableMachine?.initialState.context.table,
+          table: tableMachine.getSnapshot().context.table,
           action: XStateActions.RESTART,
         });
       }, 4000);
@@ -105,7 +113,7 @@ export class TableService {
   askForCards(payload: { tableId: string }) {
     const tableMachine = this.tables.get(payload.tableId);
     this.subject.next({
-      table: tableMachine?.initialState.context.table as Table,
+      table: tableMachine.getSnapshot().context.table as Table,
       action: XStateActions.ASK_FOR_CARDS,
     });
   }
@@ -115,7 +123,7 @@ export class TableService {
       .filter(([_, m]: [string, PokerMachine]) =>
         m.machine.context.table.players.some((p) => p.id === userId),
       )
-      .map(([id, m]) => [id, this.getTable(id)]);
+      .map(([id, _m]) => [id, this.getTable(id)]);
   }
 
   createTableTimeout(tableId: string) {
@@ -127,7 +135,7 @@ export class TableService {
         type: 'FOLD',
       });
       this.subject.next({
-        table: tableMachine?.initialState.context.table,
+        table: tableMachine.getSnapshot().context.table,
         action: XStateActions.FOLD,
       });
       this.createTableTimeout(tableId);
@@ -141,9 +149,9 @@ export class TableService {
 
   getPlayerCards(tableId: string, playerName: string) {
     const tableMachine = this.tables.get(tableId);
-    const player = tableMachine?.initialState.context.table.players.find(
-      (p) => p.name === playerName,
-    );
+    const player = tableMachine
+      .getSnapshot()
+      .context.table.players.find((p) => p.name === playerName);
     return player?.hand;
   }
 

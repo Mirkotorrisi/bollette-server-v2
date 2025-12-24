@@ -3,7 +3,6 @@ import { Card } from '../utils/types';
 export class Player {
   id: string;
   hand: Card[];
-  chips: number;
   bet = 0;
   state: 'ALL_IN' | 'SIT_OUT' | 'FOLD' | 'TO_PLAY' | 'IDLE';
   name: string;
@@ -11,6 +10,8 @@ export class Player {
   isDealer = false;
   availableChoices: string[] = [];
   position: number;
+
+  chips: number;
 
   constructor(name: string, initialChips: number, id: string) {
     this.chips = initialChips;
@@ -31,7 +32,7 @@ export class Player {
     return this.state === 'FOLD';
   }
   get isAllIn() {
-    return this.state === 'ALL_IN';
+    return this.state === 'ALL_IN' || (this.chips === 0 && this.bet > 0);
   }
   get isSitOut() {
     return this.state === 'SIT_OUT';
@@ -41,15 +42,18 @@ export class Player {
   }
 
   public payChips(amount: number) {
-    if (this.chips >= amount) {
-      this.chips -= amount;
-      this.bet += amount;
-      this.state = 'IDLE';
-      console.log(this.name, 'pays Chips');
-    }
+    const amountToPay = Math.min(this.chips, amount);
+    this.chips -= amountToPay;
+    this.bet += amountToPay;
     if (this.chips === 0) {
       this.state = 'ALL_IN';
-      console.log(this.name, 'is All in');
+      console.log(this.name, `pays ${amountToPay} and is All in`);
+    } else {
+      this.state = 'IDLE';
+      console.log(
+        this.name,
+        `pays ${amountToPay} Chips. Remaining: ${this.chips}`,
+      );
     }
   }
 
