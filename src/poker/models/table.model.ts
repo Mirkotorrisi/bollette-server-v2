@@ -74,12 +74,17 @@ export class Table {
       this.currentPlayerPosition === undefined ||
       this.lastPlayerPosition === undefined
     ) {
+      Logger.debug(
+        `Checking isLastPlayerToTalk: no currentPlayerPosition or lastPlayerPosition`,
+        'Table',
+      );
       return false;
     }
 
     const activePlayers = this.players.filter((p) => !p.isFolded && !p.isAllIn);
 
-    if (activePlayers.length <= 1) {
+    if (!activePlayers.length) {
+      Logger.debug(`Checking isLastPlayerToTalk: no active players`, 'Table');
       return true;
     }
 
@@ -88,6 +93,10 @@ export class Table {
       (p) => !p.isFolded && !p.isAllIn && p.bet < this.highestBet,
     );
     if (needsToMatch.length > 0) {
+      Logger.debug(
+        `Checking isLastPlayerToTalk: needs to match (needsToMatch: ${needsToMatch.length})`,
+        'Table',
+      );
       return false;
     }
 
