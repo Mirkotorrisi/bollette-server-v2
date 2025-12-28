@@ -309,7 +309,6 @@ export class Table {
   }
 
   bet(amount: number) {
-    console.log('bet');
     const amountToBet = Math.min(this.currentPlayer.chips, amount);
     this.currentPlayer.payChips(amountToBet);
     this.pot += amountToBet;
@@ -317,7 +316,6 @@ export class Table {
   }
 
   call() {
-    console.log('call');
     const currentBet = this.currentPlayer.bet;
     const amountToCall = Math.min(
       this.highestBet - currentBet,
@@ -328,7 +326,6 @@ export class Table {
   }
 
   raise(amount: number) {
-    console.log('raise');
     const currentBet = this.currentPlayer.bet;
     const amountToRaise = Math.min(
       this.highestBet - currentBet + amount,
@@ -340,12 +337,10 @@ export class Table {
   }
 
   fold() {
-    Logger.log('Player folded', 'Table');
     this.currentPlayer.doFold();
   }
 
   check() {
-    Logger.log('Player checked', 'Table');
     this.currentPlayer.doCheck();
   }
 
@@ -398,7 +393,7 @@ export class Table {
         const handSolved = Hand.solve(handParsed);
         Logger.log(
           `Player ${p.name} shows: ${p.hand
-            .map((c) => c.rank + c.suit[0].toUpperCase())
+            ?.map((c) => c.rank + c.suit[0].toUpperCase())
             .join(', ')} (result: ${handSolved.descr})`,
           'Table',
         );

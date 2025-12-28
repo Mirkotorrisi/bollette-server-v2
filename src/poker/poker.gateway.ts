@@ -25,6 +25,7 @@ import { NoEmptyDataGuard } from './guard/no-empty-data.guard';
 import { PlayerService } from './services/player.service';
 import { TableAmountGuard } from './guard/table-amount.guard';
 import { Subscription } from 'rxjs';
+import { PokerAgentService } from './services/agent.service';
 
 @Injectable()
 @WebSocketGateway({ cors: true })
@@ -41,6 +42,7 @@ export class PokerGateway
   constructor(
     private readonly tableService: TableService,
     private readonly playerService: PlayerService,
+    private readonly pokerAgentService: PokerAgentService,
   ) {}
   @WebSocketServer()
   server: Server;
@@ -68,18 +70,22 @@ export class PokerGateway
   afterInit(server): void {
     this.tableSubscription = this.tableService.tableSubject$.subscribe({
       next: ({ table, action }) => {
+        const cleanTable = this.tableService.getTable(table.id);
         switch (action) {
           case XStateActions.FOLD:
             this.logger.log(`Forced fold due to timeout ${table.id}.`);
-            server.to(table.id).emit(Actions.FOLD, table);
+            server.to(table.id).emit(Actions.FOLD, cleanTable);
             break;
           case XStateActions.RESTART:
             this.logger.log(`Starting a new hand on ${table.id}.`);
-            server.to(table.id).emit(Actions.CHECK, table);
+            server.to(table.id).emit(Actions.CHECK, cleanTable);
             break;
           case XStateActions.ASK_FOR_CARDS:
             this.logger.log(`Sending player cards ${table.id}.`);
             server.to(table.id).emit(Actions.ASK_FOR_CARDS);
+          case XStateActions.SHOWDOWN:
+            this.logger.log(`Sending SHOWDOWN ${table.id}.`);
+            server.to(table.id).emit(Actions.SHOWDOWN, table);
           default:
             break;
         }

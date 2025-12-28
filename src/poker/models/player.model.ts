@@ -10,13 +10,15 @@ export class Player {
   isDealer = false;
   availableChoices: string[] = [];
   position: number;
+  isBot = false;
 
   chips: number;
 
-  constructor(name: string, initialChips: number, id: string) {
+  constructor(name: string, initialChips: number, id: string, isBot?: boolean) {
     this.chips = initialChips;
     this.id = id;
     this.name = name;
+    this.isBot = isBot;
   }
 
   public reset(): void {

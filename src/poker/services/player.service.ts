@@ -7,10 +7,10 @@ export class PlayerService {
   private readonly logger = new Logger(PlayerService.name);
   private players: Map<string, Player> = new Map<string, Player>();
 
-  createPlayer(playerName: string) {
-    this.logger.log(`Creating player: ${playerName}`);
+  createPlayer(playerName: string, isBot = false) {
+    this.logger.log(`Creating player: ${playerName}, isBot: ${isBot}`);
     const id = uuidv4();
-    const player = new Player(playerName, 2000, id);
+    const player = new Player(playerName, 2000, id, isBot);
     this.players.set(player.id, player);
     return player;
   }

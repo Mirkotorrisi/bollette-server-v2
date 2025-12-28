@@ -11,7 +11,7 @@ type PokerMachine = ReturnType<typeof getPokerMachine>;
 type SubscriptionPayload = { table: Table; action: XStateActions };
 // const TIME_BANK = 20000;
 const TIME_BANK = 2000000;
-const NEW_HAND_TIMEOUT = 2000;
+const NEW_HAND_TIMEOUT = 5000;
 @Injectable()
 export class TableService {
   private readonly logger = new Logger(TableService.name);
@@ -24,7 +24,7 @@ export class TableService {
   createTable() {
     this.logger.log('Creating a new table');
     const tableId = uuidv4();
-    const table = new Table(9, tableId);
+    const table = new Table(6, tableId);
     const machine = getPokerMachine(table, this.eventEmitter);
     this.tables.set(tableId, machine);
     return tableId;
@@ -41,7 +41,7 @@ export class TableService {
     }
     tableMachine?.send({
       type: 'JOIN_TABLE',
-      player: new Player(player.name, player.chips, player.id),
+      player,
     });
     this.createTableTimeout(tableId);
 
@@ -97,8 +97,10 @@ export class TableService {
   @OnEvent(Events.START_NEW_HAND)
   startNewHandTimeout(payload: { tableId: string }) {
     const tableMachine = this.tables.get(payload.tableId);
+    console.log('Timeout starting');
     if (tableMachine.getSnapshot().context.table.hasMoreThanOnePlayer) {
       setTimeout(() => {
+        console.log('Timeout ended');
         tableMachine.send({
           type: XStateActions.RESTART,
         });
@@ -116,6 +118,15 @@ export class TableService {
     this.subject.next({
       table: tableMachine.getSnapshot().context.table as Table,
       action: XStateActions.ASK_FOR_CARDS,
+    });
+  }
+
+  @OnEvent(Events.SHOWDOWN)
+  sendShowdown(payload: { tableId: string }) {
+    const tableMachine = this.tables.get(payload.tableId);
+    this.subject.next({
+      table: tableMachine.getSnapshot().context.table as Table,
+      action: XStateActions.SHOWDOWN,
     });
   }
 

@@ -56,6 +56,7 @@ export enum Actions {
   ALL_USER_TABLES = 'allUserTables',
   GET_PLAYER_CARDS = 'getPlayerCards',
   ASK_FOR_CARDS = 'askForCards',
+  SHOWDOWN = 'showdown',
 }
 
 export enum XStateActions {
@@ -68,12 +69,15 @@ export enum XStateActions {
   LEAVE_TABLE = 'LEAVE_TABLE',
   RESTART = 'RESTART',
   ASK_FOR_CARDS = 'ASK_FOR_CARDS',
+  SHOWDOWN = 'SHOWDOWN',
 }
 
 export enum Events {
   ASK_FOR_CARDS = 'askForCards',
   START_NEW_HAND = 'startNewHand',
   CHECK_IF_ALL_IN = 'checkIfAllIn',
+  HANDLE_BOT_TURN = 'handleBotTurn',
+  SHOWDOWN = 'showdown',
 }
 
 export interface TableAndPlayer {

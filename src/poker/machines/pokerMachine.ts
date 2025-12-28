@@ -21,7 +21,7 @@ const getBettingRound = (nextRoundTarget: string) => ({
         },
         {
           target: 'playerTurn',
-          actions: ['checkIfAllIn'],
+          actions: ['checkIfAllIn', 'checkIfBotTurn'],
         },
       ],
     },
@@ -70,7 +70,7 @@ const getBettingRound = (nextRoundTarget: string) => ({
               },
               {
                 target: 'deciding',
-                actions: ['handleNextPlayer', 'checkIfAllIn'],
+                actions: ['handleNextPlayer', 'checkIfAllIn', 'checkIfBotTurn'],
               },
             ],
           },
@@ -159,6 +159,9 @@ export const getPokerMachine: any = (
           handResult: {
             entry: (ctx) => {
               ctx.logger.log('Entering Hand Result state');
+              ctx.eventEmitter.emit(Events.SHOWDOWN, {
+                tableId: ctx.table.id,
+              });
 
               // Showdown logic
               if (ctx.table.players.filter((p) => !p.isFolded).length > 1) {
@@ -278,6 +281,15 @@ export const getPokerMachine: any = (
             ctx.eventEmitter.emit(Events.CHECK_IF_ALL_IN, {
               tableId: ctx.table.id,
             });
+          },
+          checkIfBotTurn: (ctx) => {
+            ctx.logger.log('Broadcasting CHECK_IF_BOT_TURN event');
+            if (ctx.table.currentPlayer.isBot) {
+              ctx.logger.log('Bot turn');
+              ctx.eventEmitter.emit(Events.HANDLE_BOT_TURN, {
+                table: ctx.table,
+              });
+            }
           },
         },
       },
