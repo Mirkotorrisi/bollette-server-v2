@@ -81,7 +81,9 @@ export class Table {
       return false;
     }
 
-    const activePlayers = this.players.filter((p) => !p.isFolded && !p.isAllIn);
+    const activePlayers = this.players.filter(
+      (p) => !p.isFolded && !p.isAllIn && !p.isAwaiting,
+    );
 
     if (!activePlayers.length) {
       Logger.debug(`Checking isLastPlayerToTalk: no active players`, 'Table');
@@ -90,7 +92,8 @@ export class Table {
 
     // If there's at least one bet lower than the highest bet, the round is not over
     const needsToMatch = this.players.filter(
-      (p) => !p.isFolded && !p.isAllIn && p.bet < this.highestBet,
+      (p) =>
+        !p.isFolded && !p.isAllIn && !p.isAwaiting && p.bet < this.highestBet,
     );
     if (needsToMatch.length > 0) {
       Logger.debug(
@@ -109,13 +112,15 @@ export class Table {
   }
 
   get isOnePlayerLeft(): boolean {
-    const bool = this.players.filter((p) => !p.isFolded).length === 1;
+    const bool =
+      this.players.filter((p) => !p.isFolded && !p.isAwaiting).length === 1;
     Logger.debug(`isOnePlayerLeft: ${bool}`, 'Table');
     return bool;
   }
 
   get isTwoPlayerLeft(): boolean {
-    const bool = this.players.filter((p) => !p.isFolded).length === 2;
+    const bool =
+      this.players.filter((p) => !p.isFolded && !p.isAwaiting).length === 2;
     Logger.debug(`isTwoPlayerLeft: ${bool}`, 'Table');
     return bool;
   }
@@ -145,6 +150,9 @@ export class Table {
   addPlayer(player: Player): boolean {
     if (this.isFull || this.players.some((p) => p.id === player.id)) {
       return false;
+    }
+    if (!this.isHandOver) {
+      player.state = 'WAITING';
     }
     this.players.push(player);
     return true;
@@ -256,7 +264,11 @@ export class Table {
 
   findNextActivePlayer(startPos: number): number {
     let nextPos = (startPos + 1) % this.currentPlayersCount;
-    while (this.players[nextPos].isFolded || this.players[nextPos].isAllIn) {
+    while (
+      this.players[nextPos].isFolded ||
+      this.players[nextPos].isAllIn ||
+      this.players[nextPos].isAwaiting
+    ) {
       if (nextPos === startPos) break; // Should not happen during active hand
       nextPos = (nextPos + 1) % this.currentPlayersCount;
     }
@@ -266,7 +278,7 @@ export class Table {
   findPreviousActivePlayer(startPos: number): number {
     let prevPos =
       (startPos - 1 + this.currentPlayersCount) % this.currentPlayersCount;
-    while (this.players[prevPos].isFolded) {
+    while (this.players[prevPos].isFolded || this.players[prevPos].isAwaiting) {
       if (prevPos === startPos) break;
       prevPos =
         (prevPos - 1 + this.currentPlayersCount) % this.currentPlayersCount;
@@ -387,7 +399,7 @@ export class Table {
     Logger.log('Handling Showdown', 'Table');
     this.currentRound = HandRound.SHOWDOWN;
     const handsAndIds = this.players
-      .filter((p) => !p.isFolded)
+      .filter((p) => !p.isFolded && !p.isAwaiting)
       .map((p) => {
         const handParsed = formatHand([...p.hand, ...this.communityCards]);
         const handSolved = Hand.solve(handParsed);
@@ -447,7 +459,7 @@ export class Table {
   }
   handleWinWithoutShowDown() {
     // here goes logic to understand wich is the winning hand
-    const winner = this.players.find((p) => !p.isFolded);
+    const winner = this.players.find((p) => !p.isFolded && !p.isAwaiting);
     if (winner) {
       Logger.log(
         `${winner.name} wins ${this.pot} chips (Opponents folded)`,

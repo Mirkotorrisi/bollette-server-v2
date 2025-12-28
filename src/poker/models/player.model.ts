@@ -4,7 +4,7 @@ export class Player {
   id: string;
   hand: Card[];
   bet = 0;
-  state: 'ALL_IN' | 'SIT_OUT' | 'FOLD' | 'TO_PLAY' | 'IDLE';
+  state: 'ALL_IN' | 'SIT_OUT' | 'FOLD' | 'TO_PLAY' | 'IDLE' | 'WAITING';
   name: string;
   isCurrentPlayer = false;
   isDealer = false;
@@ -19,6 +19,7 @@ export class Player {
     this.id = id;
     this.name = name;
     this.isBot = isBot;
+    this.state = 'WAITING';
   }
 
   public reset(): void {
@@ -41,6 +42,9 @@ export class Player {
   }
   get hasToPlay() {
     return this.state === 'TO_PLAY';
+  }
+  get isAwaiting() {
+    return this.state === 'WAITING';
   }
 
   public payChips(amount: number) {

@@ -164,7 +164,10 @@ export const getPokerMachine: any = (
               });
 
               // Showdown logic
-              if (ctx.table.players.filter((p) => !p.isFolded).length > 1) {
+              if (
+                ctx.table.players.filter((p) => !p.isFolded && !p.isAwaiting)
+                  .length > 1
+              ) {
                 ctx.logger.log('Triggering Showdown logic');
                 ctx.table.handleShowDown();
                 ctx.eventEmitter.emit(Events.ASK_FOR_CARDS, {
@@ -207,12 +210,15 @@ export const getPokerMachine: any = (
             if (ctx.table.isHandOver) return false;
             const players = ctx.table.players;
             const act = players.filter(
-              (p) => !p.isFolded && !p.isAllIn && p.chips > 0,
+              (p) => !p.isFolded && !p.isAllIn && !p.isAwaiting && p.chips > 0,
             );
 
             const areBetsEqual = !players.some(
               (p) =>
-                !p.isFolded && !p.isAllIn && p.bet !== ctx.table.highestBet,
+                !p.isFolded &&
+                !p.isAllIn &&
+                !p.isAwaiting &&
+                p.bet !== ctx.table.highestBet,
             );
 
             const bool = act.length <= 1 && areBetsEqual;
@@ -225,7 +231,8 @@ export const getPokerMachine: any = (
           },
           isNotLastPlayerToTalk: (ctx) => !ctx.table.isLastPlayerToTalk,
           isTwoPlayerLeft: (ctx) =>
-            ctx.table.players.filter((p) => !p.isFolded).length === 2,
+            ctx.table.players.filter((p) => !p.isFolded && !p.isAwaiting)
+              .length === 2,
         },
         actions: {
           addPlayer: (ctx, evt) => {
