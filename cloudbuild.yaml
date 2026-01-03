@@ -1,0 +1,26 @@
+steps:
+  # 1. Build immagine
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'europe-west1-docker.pkg.dev/bollette-server/bollette-server-repo/bollette-app:$COMMIT_SHA', '.']
+
+  # 2. Push immagine
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'europe-west1-docker.pkg.dev/bollette-server/bollette-server-repo/bollette-app:$COMMIT_SHA']
+
+  # 3. Deploy su Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'bollette-service'
+      - '--image'
+      - 'europe-west1-docker.pkg.dev/bollette-server/bollette-server-repo/bollette-app:$COMMIT_SHA'
+      - '--region'
+      - 'europe-west1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
