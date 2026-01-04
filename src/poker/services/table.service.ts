@@ -167,6 +167,12 @@ export class TableService {
     return player?.hand;
   }
 
+  getTableLogs(tableId: string): string[] {
+    const tableMachine = this.tables.get(tableId);
+    if (!tableMachine) return [];
+    return tableMachine.getSnapshot().context.table.logs || [];
+  }
+
   get tableSubject$() {
     return this.subject.asObservable();
   }

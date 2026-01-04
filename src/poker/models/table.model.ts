@@ -1,4 +1,4 @@
-import { formatHand } from '../utils/handsUtils';
+import { formatHand, formatCardsForDisplay } from '../utils/handsUtils';
 import { Card, HandRound } from '../utils/types';
 import { Deck } from './deck.model';
 import { Player } from './player.model';
@@ -20,6 +20,7 @@ export class Table {
   firstPlayer: number;
   lastPlayerPosition: number;
   isHandOver = true;
+  logs: string[] = [];
 
   constructor(public readonly maxPlayers: number, id: string) {
     this.id = id;
@@ -147,6 +148,14 @@ export class Table {
     );
   }
 
+  addLog(message: string): void {
+    this.logs.push(message);
+  }
+
+  clearLogs(): void {
+    this.logs = [];
+  }
+
   addPlayer(player: Player): boolean {
     if (this.isFull || this.players.some((p) => p.id === player.id)) {
       return false;
@@ -155,6 +164,7 @@ export class Table {
       player.state = 'WAITING';
     }
     this.players.push(player);
+    this.addLog(`${player.name} joined the table`);
     return true;
   }
 
@@ -162,6 +172,7 @@ export class Table {
     const index = this.players.findIndex((p: Player) => p.id === player.id);
     if (index !== -1) {
       this.players.splice(index, 1);
+      this.addLog(`${player.name} left the table`);
     }
   }
 
@@ -177,6 +188,7 @@ export class Table {
     this.pot = 0;
     this.communityCards = [];
     this.currentRound = HandRound.PRE_FLOP;
+    this.clearLogs();
 
     // Reset players and deal cards
     this.players.forEach((player, index) => {
@@ -325,6 +337,7 @@ export class Table {
     this.currentPlayer.payChips(amountToBet);
     this.pot += amountToBet;
     this.highestBet = this.currentPlayer.bet;
+    this.addLog(`${this.currentPlayer.name} bets $${amountToBet}`);
   }
 
   call() {
@@ -335,6 +348,7 @@ export class Table {
     );
     this.currentPlayer.payChips(amountToCall);
     this.pot += amountToCall;
+    this.addLog(`${this.currentPlayer.name} calls $${amountToCall}`);
   }
 
   raise(amount: number) {
@@ -346,14 +360,17 @@ export class Table {
     this.pot += amountToRaise;
     this.currentPlayer.payChips(amountToRaise);
     this.highestBet = this.currentPlayer.bet;
+    this.addLog(`${this.currentPlayer.name} raises to $${this.currentPlayer.bet}`);
   }
 
   fold() {
     this.currentPlayer.doFold();
+    this.addLog(`${this.currentPlayer.name} folds`);
   }
 
   check() {
     this.currentPlayer.doCheck();
+    this.addLog(`${this.currentPlayer.name} checks`);
   }
 
   handlePreFlop() {
@@ -371,6 +388,7 @@ export class Table {
         .join(', ')}`,
       'Table',
     );
+    this.addLog(`Flop: ${formatCardsForDisplay(cards)}`);
     this.startNewRound();
   }
   handleTurn() {
@@ -381,6 +399,7 @@ export class Table {
       `Dealing Turn: ${card.rank}${card.suit[0].toUpperCase()}`,
       'Table',
     );
+    this.addLog(`Turn: ${formatCardsForDisplay([card])}`);
     this.startNewRound();
   }
   handleRiver() {
@@ -391,6 +410,7 @@ export class Table {
       `Dealing River: ${card.rank}${card.suit[0].toUpperCase()}`,
       'Table',
     );
+    this.addLog(`River: ${formatCardsForDisplay([card])}`);
     this.startNewRound();
   }
 
@@ -437,6 +457,7 @@ export class Table {
         `${player.name} wins ${share} chips with ${wp.hand.descr}`,
         'Table',
       );
+      this.addLog(`${player.name} wins $${share.toFixed(2)} with ${wp.hand.descr}`);
     });
     if (winnerPlayers.length > 0) {
       const firstWinner = this.players.find(
@@ -467,6 +488,7 @@ export class Table {
       );
       winner.chips += this.pot;
       this.currentPlayerPosition = winner.position;
+      this.addLog(`${winner.name} wins $${this.pot.toFixed(2)} (all opponents folded)`);
     } else {
       Logger.warn('No winner found in handleWinWithoutShowDown', 'Table');
     }

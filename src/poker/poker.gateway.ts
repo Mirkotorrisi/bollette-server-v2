@@ -84,10 +84,12 @@ export class PokerGateway
           case XStateActions.FOLD:
             this.logger.log(`Forced fold due to timeout ${table.id}.`);
             server.to(table.id).emit(Actions.FOLD, cleanTable);
+            this.emitLogs(table.id);
             break;
           case XStateActions.RESTART:
             this.logger.log(`Starting a new hand on ${table.id}.`);
             server.to(table.id).emit(Actions.CHECK, cleanTable);
+            this.emitLogs(table.id);
             break;
           case XStateActions.ASK_FOR_CARDS:
             this.logger.log(`Sending player cards ${table.id}.`);
@@ -95,6 +97,7 @@ export class PokerGateway
           case XStateActions.SHOWDOWN:
             this.logger.log(`Sending SHOWDOWN ${table.id}.`);
             server.to(table.id).emit(Actions.SHOWDOWN, table);
+            this.emitLogs(table.id);
           default:
             break;
         }
@@ -133,6 +136,7 @@ export class PokerGateway
     client.emit(Actions.ALL_USER_TABLES, userTables);
     client.join(tableId);
     this.server.to(table.id).emit(Actions.ASK_FOR_CARDS, table.id);
+    this.emitLogs(tableId);
   }
 
   @SubscribeMessage(Actions.LEAVE)
@@ -149,6 +153,7 @@ export class PokerGateway
       this.tableService.getUserTables(player.id),
     );
     client.leave(tableId);
+    this.emitLogs(tableId);
   }
 
   @SubscribeMessage(Actions.GET_PLAYER_CARDS)
@@ -168,6 +173,7 @@ export class PokerGateway
       amount,
     );
     this.server.to(tableId).emit(Actions.BET, table);
+    this.emitLogs(tableId);
   }
 
   @SubscribeMessage(Actions.RAISE)
@@ -180,6 +186,7 @@ export class PokerGateway
       amount,
     );
     this.server.to(tableId).emit(Actions.RAISE, table);
+    this.emitLogs(tableId);
   }
 
   @SubscribeMessage(Actions.CHECK)
@@ -187,6 +194,7 @@ export class PokerGateway
     this.logger.log(`Player check on table ${tableId}.`);
     const table = this.tableService.handleAction(tableId, XStateActions.CHECK);
     this.server.to(tableId).emit(Actions.CHECK, table);
+    this.emitLogs(tableId);
   }
 
   @SubscribeMessage(Actions.FOLD)
@@ -194,6 +202,7 @@ export class PokerGateway
     this.logger.log(`Player fold on table ${tableId}.`);
     const table = this.tableService.handleAction(tableId, XStateActions.FOLD);
     this.server.to(tableId).emit(Actions.FOLD, table);
+    this.emitLogs(tableId);
   }
 
   @SubscribeMessage(Actions.CALL)
@@ -201,5 +210,13 @@ export class PokerGateway
     this.logger.log(`Player call on table ${tableId}.`);
     const table = this.tableService.handleAction(tableId, XStateActions.CALL);
     this.server.to(tableId).emit(Actions.CALL, table);
+    this.emitLogs(tableId);
+  }
+
+  private emitLogs(tableId: string) {
+    const logs = this.tableService.getTableLogs(tableId);
+    if (logs && logs.length > 0) {
+      this.server.to(tableId).emit(Actions.GAME_LOG, logs);
+    }
   }
 }
