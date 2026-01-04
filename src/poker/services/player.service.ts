@@ -23,4 +23,11 @@ export class PlayerService {
   getPlayer(playerId: string) {
     return this.players.get(playerId);
   }
+
+  getPlayerByName(username: string) {
+    for (const player of Array.from(this.players)) {
+      if (player[1].name === username) return player[1];
+    }
+    return null;
+  }
 }

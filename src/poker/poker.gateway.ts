@@ -52,8 +52,11 @@ export class PokerGateway
   handleConnection(client: Socket) {
     const playerName = client.handshake.auth.name;
 
+    const player =
+      this.playerService.getPlayerByName(playerName) ??
+      this.playerService.createPlayer(playerName);
+
     this.logger.log(`Client ${client.id} connected to poker gateway.`);
-    const player = this.playerService.createPlayer(playerName);
 
     client.emit(Actions.SET_PLAYER, player);
     client.emit(Actions.ALL_TABLES, this.tableService.allTables);
@@ -61,6 +64,12 @@ export class PokerGateway
       Actions.ALL_USER_TABLES,
       this.tableService.getUserTables(player.id),
     );
+
+    const userTables = this.tableService.getUserTables(player.id);
+    this.logger.log(`User ${player.name} is connected to tables ${userTables}`);
+    for (const [tableId] of userTables) {
+      client.join(tableId);
+    }
   }
 
   handleDisconnect(client: Socket) {
