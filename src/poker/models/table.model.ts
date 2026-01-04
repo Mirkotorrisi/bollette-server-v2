@@ -360,7 +360,9 @@ export class Table {
     this.pot += amountToRaise;
     this.currentPlayer.payChips(amountToRaise);
     this.highestBet = this.currentPlayer.bet;
-    this.addLog(`${this.currentPlayer.name} raises to $${this.currentPlayer.bet}`);
+    this.addLog(
+      `${this.currentPlayer.name} raises to $${this.currentPlayer.bet}`,
+    );
   }
 
   fold() {
@@ -457,7 +459,9 @@ export class Table {
         `${player.name} wins ${share} chips with ${wp.hand.descr}`,
         'Table',
       );
-      this.addLog(`${player.name} wins $${share.toFixed(2)} with ${wp.hand.descr}`);
+      this.addLog(
+        `${player.name} wins $${share.toFixed(2)} with ${wp.hand.descr}`,
+      );
     });
     if (winnerPlayers.length > 0) {
       const firstWinner = this.players.find(
@@ -488,7 +492,9 @@ export class Table {
       );
       winner.chips += this.pot;
       this.currentPlayerPosition = winner.position;
-      this.addLog(`${winner.name} wins $${this.pot.toFixed(2)} (all opponents folded)`);
+      this.addLog(
+        `${winner.name} wins $${this.pot.toFixed(2)} (all opponents folded)`,
+      );
     } else {
       Logger.warn('No winner found in handleWinWithoutShowDown', 'Table');
     }

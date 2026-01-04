@@ -98,7 +98,9 @@ describe('Poker Logging System', () => {
 
     // Check that win was logged
     expect(
-      table.logs.some((log) => log.includes('wins $') && log.includes('all opponents folded')),
+      table.logs.some(
+        (log) => log.includes('wins $') && log.includes('all opponents folded'),
+      ),
     ).toBe(true);
   });
 

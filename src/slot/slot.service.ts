@@ -18,7 +18,7 @@ export class SlotService {
       Math.floor(Math.random() * numOfSymbols),
     );
     const values = results.map((i) => i % numOfSymbols);
-    let duplicates = values.filter(
+    const duplicates = values.filter(
       (item, index) => values.indexOf(item) != index,
     );
     if (duplicates.length > 0) {
