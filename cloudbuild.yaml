@@ -22,7 +22,7 @@ steps:
       - 'managed'
       - '--allow-unauthenticated'
       - '--set-env-vars'
-      - 'PORT=8080,REDIS_URI=redis-12223.c17.us-east-1-4.ec2.redns.redis-cloud.com,REDIS_PORT=12223'
+      - 'REDIS_URI=redis-12223.c17.us-east-1-4.ec2.redns.redis-cloud.com,REDIS_PORT=12223'
 
 options:
   logging: CLOUD_LOGGING_ONLY
