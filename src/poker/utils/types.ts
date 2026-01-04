@@ -57,6 +57,7 @@ export enum Actions {
   GET_PLAYER_CARDS = 'getPlayerCards',
   ASK_FOR_CARDS = 'askForCards',
   SHOWDOWN = 'showdown',
+  GAME_LOG = 'gameLog',
 }
 
 export enum XStateActions {
